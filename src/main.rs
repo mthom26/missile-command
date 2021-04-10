@@ -1,19 +1,39 @@
 use bevy::prelude::*;
 
+struct Silo;
+
+#[derive(Default)]
+struct MousePosition {
+    position: Vec2,
+}
+
+#[derive(Default)]
+struct AssetHandles {
+    missile_red: Handle<ColorMaterial>,
+    missile_green: Handle<ColorMaterial>,
+    explosion_red: Handle<ColorMaterial>,
+    explosion_green: Handle<ColorMaterial>,
+}
+
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     windows: Res<Windows>,
-    // textures: Res<Assets<Texture>>
+    mut asset_handles: ResMut<AssetHandles>, // textures: Res<Assets<Texture>>
 ) {
     let silo_tex = asset_server.load("missile_silo.png");
     let ground_tex = asset_server.load("ground.png");
     let building_tex = asset_server.load("building.png");
-    // let missile_red_tex = asset_server.load("missile_red.png");
-    // let missile_green_tex = asset_server.load("missile_green.png");
-    // let explosion_red = asset_server.load("explosion_red");
-    // let explosion_green = asset_server.load("explosion_green");
+    let missile_red_tex: Handle<Texture> = asset_server.load("missile_red.png");
+    let missile_green_tex: Handle<Texture> = asset_server.load("missile_green.png");
+    let explosion_red_tex: Handle<Texture> = asset_server.load("explosion_red");
+    let explosion_green_tex: Handle<Texture> = asset_server.load("explosion_green");
+
+    asset_handles.missile_red = materials.add(missile_red_tex.into());
+    asset_handles.missile_green = materials.add(missile_green_tex.into());
+    asset_handles.explosion_red = materials.add(explosion_red_tex.into());
+    asset_handles.explosion_green = materials.add(explosion_green_tex.into());
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 
@@ -50,14 +70,16 @@ fn setup(
                 //        proper variables for clarity
                 let y = 16.0 - 328.0 + 32.0;
 
-                commands.spawn_bundle(SpriteBundle {
-                    material: materials.add(silo_tex.clone().into()),
-                    transform: Transform {
-                        translation: Vec3::new(x, y, 0.0),
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        material: materials.add(silo_tex.clone().into()),
+                        transform: Transform {
+                            translation: Vec3::new(x, y, 0.0),
+                            ..Default::default()
+                        },
                         ..Default::default()
-                    },
-                    ..Default::default()
-                });
+                    })
+                    .insert(Silo);
             }
             _ => {
                 let x = (step_size * i as f32) + half_step - half_width;
@@ -76,6 +98,41 @@ fn setup(
     }
 }
 
+fn shoot(
+    mut commands: Commands,
+    keys: Res<Input<KeyCode>>,
+    // mouse_pos: Res<MousePosition>,
+    asset_handles: Res<AssetHandles>,
+    query: Query<(&Silo, &Transform)>,
+) {
+    for (_, transform) in query.iter() {
+        if keys.just_pressed(KeyCode::A) {
+            let mut spawn_point = transform.translation;
+            spawn_point.y += 16.0; // Should replace this with Texture half height
+
+            commands.spawn_bundle(SpriteBundle {
+                material: asset_handles.missile_green.clone(),
+                transform: Transform {
+                    translation: spawn_point,
+                    ..Default::default()
+                },
+                ..Default::default()
+            });
+        }
+    }
+}
+
+fn get_mouse_pos(mut cursor_evt: EventReader<CursorMoved>, mut mouse_pos: ResMut<MousePosition>) {
+    for event in cursor_evt.iter() {
+        let x = event.position.x - 1280.0 / 2.0;
+        let y = event.position.y - 720.0 / 2.0;
+        mouse_pos.position = Vec2::new(x, y);
+        // println!("{:?}", event);
+        // println!("x: {}, y: {}", x, y);
+        // println!();
+    }
+}
+
 fn main() {
     App::build()
         .insert_resource(WindowDescriptor {
@@ -84,7 +141,11 @@ fn main() {
         })
         .insert_resource(ClearColor(Color::rgb(0.11, 0.11, 0.14)))
         .add_plugins(DefaultPlugins)
+        .init_resource::<MousePosition>()
+        .init_resource::<AssetHandles>()
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system())
+        .add_system(get_mouse_pos.system().label("get_mouse_position"))
+        .add_system(shoot.system().after("get_mouse_position"))
         .run();
 }
