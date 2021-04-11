@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 
+const MISSILE_VELOCITY: f32 = 200.0;
+
 struct Silo;
+
+struct Velocity(Vec2);
 
 #[derive(Default)]
 struct MousePosition {
@@ -101,7 +105,7 @@ fn setup(
 fn shoot(
     mut commands: Commands,
     keys: Res<Input<KeyCode>>,
-    // mouse_pos: Res<MousePosition>,
+    mouse_pos: Res<MousePosition>,
     asset_handles: Res<AssetHandles>,
     query: Query<(&Silo, &Transform)>,
 ) {
@@ -110,14 +114,25 @@ fn shoot(
             let mut spawn_point = transform.translation;
             spawn_point.y += 16.0; // Should replace this with Texture half height
 
-            commands.spawn_bundle(SpriteBundle {
-                material: asset_handles.missile_green.clone(),
-                transform: Transform {
-                    translation: spawn_point,
+            // Rotate missile towards mouse position
+            let a = Vec2::new(0.0, 1.0);
+            let b = mouse_pos.position - Vec2::new(spawn_point.x, spawn_point.y);
+            let angle = a.angle_between(b);
+
+            // Missile velocity
+            let velocity = b.normalize() * MISSILE_VELOCITY;
+
+            commands
+                .spawn_bundle(SpriteBundle {
+                    material: asset_handles.missile_green.clone(),
+                    transform: Transform {
+                        translation: spawn_point,
+                        rotation: Quat::from_rotation_z(angle),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            });
+                })
+                .insert(Velocity(velocity));
         }
     }
 }
@@ -130,6 +145,13 @@ fn get_mouse_pos(mut cursor_evt: EventReader<CursorMoved>, mut mouse_pos: ResMut
         // println!("{:?}", event);
         // println!("x: {}, y: {}", x, y);
         // println!();
+    }
+}
+
+fn apply_velocity(time: Res<Time>, mut query: Query<(&Velocity, &mut Transform)>) {
+    for (velocity, mut transform) in query.iter_mut() {
+        let vel = Vec3::new(velocity.0.x, velocity.0.y, 0.0) * time.delta_seconds();
+        transform.translation += vel;
     }
 }
 
@@ -147,5 +169,6 @@ fn main() {
         .add_system(bevy::input::system::exit_on_esc_system.system())
         .add_system(get_mouse_pos.system().label("get_mouse_position"))
         .add_system(shoot.system().after("get_mouse_position"))
+        .add_system(apply_velocity.system())
         .run();
 }
