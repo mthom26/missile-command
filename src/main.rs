@@ -2,7 +2,16 @@ use bevy::prelude::*;
 
 const MISSILE_VELOCITY: f32 = 200.0;
 
-struct Silo;
+struct Silo {
+    location: SiloLocation,
+}
+
+#[derive(PartialEq, Debug)]
+enum SiloLocation {
+    Left,
+    Middle,
+    Right,
+}
 
 struct Velocity(Vec2);
 
@@ -74,6 +83,19 @@ fn setup(
                 //        proper variables for clarity
                 let y = 16.0 - 328.0 + 32.0;
 
+                let silo = match i {
+                    0 => Silo {
+                        location: SiloLocation::Left,
+                    },
+                    4 => Silo {
+                        location: SiloLocation::Middle,
+                    },
+                    8 => Silo {
+                        location: SiloLocation::Right,
+                    },
+                    _ => panic!("How the hell did this happen!?"),
+                };
+
                 commands
                     .spawn_bundle(SpriteBundle {
                         material: materials.add(silo_tex.clone().into()),
@@ -83,7 +105,7 @@ fn setup(
                         },
                         ..Default::default()
                     })
-                    .insert(Silo);
+                    .insert(silo);
             }
             _ => {
                 let x = (step_size * i as f32) + half_step - half_width;
@@ -109,32 +131,74 @@ fn shoot(
     asset_handles: Res<AssetHandles>,
     query: Query<(&Silo, &Transform)>,
 ) {
-    for (_, transform) in query.iter() {
+    for (silo, transform) in query.iter() {
         if keys.just_pressed(KeyCode::A) {
-            let mut spawn_point = transform.translation;
-            spawn_point.y += 16.0; // Should replace this with Texture half height
-
-            // Rotate missile towards mouse position
-            let a = Vec2::new(0.0, 1.0);
-            let b = mouse_pos.position - Vec2::new(spawn_point.x, spawn_point.y);
-            let angle = a.angle_between(b);
-
-            // Missile velocity
-            let velocity = b.normalize() * MISSILE_VELOCITY;
-
-            commands
-                .spawn_bundle(SpriteBundle {
-                    material: asset_handles.missile_green.clone(),
-                    transform: Transform {
-                        translation: spawn_point,
-                        rotation: Quat::from_rotation_z(angle),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                })
-                .insert(Velocity(velocity));
+            if silo.location == SiloLocation::Left {
+                let (sprite_bundle, velocity_component) = get_missile_components(
+                    asset_handles.missile_green.clone(),
+                    transform,
+                    mouse_pos.position,
+                );
+                commands
+                    .spawn_bundle(sprite_bundle)
+                    .insert(velocity_component);
+            }
+        }
+        if keys.just_pressed(KeyCode::S) {
+            if silo.location == SiloLocation::Middle {
+                let (sprite_bundle, velocity_component) = get_missile_components(
+                    asset_handles.missile_green.clone(),
+                    transform,
+                    mouse_pos.position,
+                );
+                commands
+                    .spawn_bundle(sprite_bundle)
+                    .insert(velocity_component);
+            }
+        }
+        if keys.just_pressed(KeyCode::D) {
+            if silo.location == SiloLocation::Right {
+                let (sprite_bundle, velocity_component) = get_missile_components(
+                    asset_handles.missile_green.clone(),
+                    transform,
+                    mouse_pos.position,
+                );
+                commands
+                    .spawn_bundle(sprite_bundle)
+                    .insert(velocity_component);
+            }
         }
     }
+}
+
+fn get_missile_components(
+    handle: Handle<ColorMaterial>,
+    transform: &Transform,
+    mouse_pos: Vec2,
+) -> (SpriteBundle, Velocity) {
+    let mut spawn_point = transform.translation;
+    spawn_point.y += 16.0; // Should replace this with Texture half height
+
+    // Rotate missile towards mouse position
+    let a = Vec2::new(0.0, 1.0);
+    let b = mouse_pos - Vec2::new(spawn_point.x, spawn_point.y);
+    let angle = a.angle_between(b);
+
+    // Missile velocity
+    let velocity = b.normalize() * MISSILE_VELOCITY;
+
+    (
+        SpriteBundle {
+            material: handle,
+            transform: Transform {
+                translation: spawn_point,
+                rotation: Quat::from_rotation_z(angle),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        Velocity(velocity),
+    )
 }
 
 fn get_mouse_pos(mut cursor_evt: EventReader<CursorMoved>, mut mouse_pos: ResMut<MousePosition>) {
