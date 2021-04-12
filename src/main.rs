@@ -1,5 +1,9 @@
 use bevy::prelude::*;
 
+mod missile;
+
+use missile::{spawn_missiles, SpawnMissile};
+
 const MISSILE_VELOCITY: f32 = 200.0;
 
 struct Silo {
@@ -21,11 +25,11 @@ struct MousePosition {
 }
 
 #[derive(Default)]
-struct AssetHandles {
-    missile_red: Handle<ColorMaterial>,
-    missile_green: Handle<ColorMaterial>,
-    explosion_red: Handle<ColorMaterial>,
-    explosion_green: Handle<ColorMaterial>,
+pub struct AssetHandles {
+    pub missile_red: Handle<ColorMaterial>,
+    pub missile_green: Handle<ColorMaterial>,
+    pub explosion_red: Handle<ColorMaterial>,
+    pub explosion_green: Handle<ColorMaterial>,
 }
 
 fn setup(
@@ -125,80 +129,39 @@ fn setup(
 }
 
 fn shoot(
-    mut commands: Commands,
     keys: Res<Input<KeyCode>>,
     mouse_pos: Res<MousePosition>,
-    asset_handles: Res<AssetHandles>,
     query: Query<(&Silo, &Transform)>,
+    mut event: EventWriter<SpawnMissile>,
 ) {
-    for (silo, transform) in query.iter() {
-        if keys.just_pressed(KeyCode::A) {
-            if silo.location == SiloLocation::Left {
-                let (sprite_bundle, velocity_component) = get_missile_components(
-                    asset_handles.missile_green.clone(),
-                    transform,
-                    mouse_pos.position,
-                );
-                commands
-                    .spawn_bundle(sprite_bundle)
-                    .insert(velocity_component);
-            }
-        }
-        if keys.just_pressed(KeyCode::S) {
-            if silo.location == SiloLocation::Middle {
-                let (sprite_bundle, velocity_component) = get_missile_components(
-                    asset_handles.missile_green.clone(),
-                    transform,
-                    mouse_pos.position,
-                );
-                commands
-                    .spawn_bundle(sprite_bundle)
-                    .insert(velocity_component);
-            }
-        }
-        if keys.just_pressed(KeyCode::D) {
-            if silo.location == SiloLocation::Right {
-                let (sprite_bundle, velocity_component) = get_missile_components(
-                    asset_handles.missile_green.clone(),
-                    transform,
-                    mouse_pos.position,
-                );
-                commands
-                    .spawn_bundle(sprite_bundle)
-                    .insert(velocity_component);
-            }
-        }
+    // Could probably just put the silo positions in a resource on startup,
+    // they should only change on screen resize
+    let mut positions = [Vec3::ZERO; 3];
+    for (i, (_, transform)) in query.iter().enumerate() {
+        positions[i] = transform.translation;
+        positions[i].y += 10.0;
     }
-}
 
-fn get_missile_components(
-    handle: Handle<ColorMaterial>,
-    transform: &Transform,
-    mouse_pos: Vec2,
-) -> (SpriteBundle, Velocity) {
-    let mut spawn_point = transform.translation;
-    spawn_point.y += 16.0; // Should replace this with Texture half height
+    let target = Vec3::new(mouse_pos.position.x, mouse_pos.position.y, 0.0);
 
-    // Rotate missile towards mouse position
-    let a = Vec2::new(0.0, 1.0);
-    let b = mouse_pos - Vec2::new(spawn_point.x, spawn_point.y);
-    let angle = a.angle_between(b);
-
-    // Missile velocity
-    let velocity = b.normalize() * MISSILE_VELOCITY;
-
-    (
-        SpriteBundle {
-            material: handle,
-            transform: Transform {
-                translation: spawn_point,
-                rotation: Quat::from_rotation_z(angle),
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        Velocity(velocity),
-    )
+    if keys.just_pressed(KeyCode::A) {
+        event.send(SpawnMissile {
+            position: positions[0],
+            target,
+        })
+    }
+    if keys.just_pressed(KeyCode::S) {
+        event.send(SpawnMissile {
+            position: positions[1],
+            target,
+        })
+    }
+    if keys.just_pressed(KeyCode::D) {
+        event.send(SpawnMissile {
+            position: positions[2],
+            target,
+        })
+    }
 }
 
 fn get_mouse_pos(mut cursor_evt: EventReader<CursorMoved>, mut mouse_pos: ResMut<MousePosition>) {
@@ -229,10 +192,12 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
+        .add_event::<SpawnMissile>()
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system())
         .add_system(get_mouse_pos.system().label("get_mouse_position"))
         .add_system(shoot.system().after("get_mouse_position"))
         .add_system(apply_velocity.system())
+        .add_system(spawn_missiles.system())
         .run();
 }
