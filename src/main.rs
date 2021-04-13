@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 mod missile;
 
-use missile::{spawn_missiles, SpawnMissile};
+use missile::{check_target_reached, spawn_missiles, SpawnMissile};
 
 const MISSILE_VELOCITY: f32 = 200.0;
 
@@ -199,5 +199,6 @@ fn main() {
         .add_system(shoot.system().after("get_mouse_position"))
         .add_system(apply_velocity.system())
         .add_system(spawn_missiles.system())
+        .add_system(check_target_reached.system())
         .run();
 }

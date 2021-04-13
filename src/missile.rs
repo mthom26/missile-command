@@ -5,7 +5,7 @@ use crate::{AssetHandles, Velocity, MISSILE_VELOCITY};
 struct Missile;
 
 // Position the missile should explode at if it doesn't hit anything
-struct Target(Vec3);
+pub struct Target(Vec3);
 
 // Spawn missile event
 pub struct SpawnMissile {
@@ -39,5 +39,14 @@ pub fn spawn_missiles(
             .insert(Velocity(velocity))
             .insert(Target(e.target))
             .insert(Missile);
+    }
+}
+
+pub fn check_target_reached(mut commands: Commands, query: Query<(Entity, &Transform, &Target)>) {
+    for (entity, transform, target) in query.iter() {
+        if transform.translation.distance_squared(target.0) < 10.0 {
+            commands.entity(entity).despawn();
+            // TODO - Send event to spawn explosion
+        }
     }
 }
