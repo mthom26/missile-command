@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 mod missile;
 
-use missile::{check_target_reached, spawn_missiles, SpawnMissile};
+use missile::{MissilePlugin, SpawnMissile};
 
 const MISSILE_VELOCITY: f32 = 200.0;
 
@@ -190,15 +190,13 @@ fn main() {
         })
         .insert_resource(ClearColor(Color::rgb(0.11, 0.11, 0.14)))
         .add_plugins(DefaultPlugins)
+        .add_plugin(MissilePlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
-        .add_event::<SpawnMissile>()
         .add_startup_system(setup.system())
         .add_system(bevy::input::system::exit_on_esc_system.system())
         .add_system(get_mouse_pos.system().label("get_mouse_position"))
         .add_system(shoot.system().after("get_mouse_position"))
         .add_system(apply_velocity.system())
-        .add_system(spawn_missiles.system())
-        .add_system(check_target_reached.system())
         .run();
 }
