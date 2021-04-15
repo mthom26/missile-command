@@ -1,8 +1,12 @@
 use bevy::prelude::*;
 
-use crate::{team::Team, AssetHandles};
+use crate::{
+    collision::CircleCollider,
+    team::{EnemyTeam, PlayerTeam, Team},
+    AssetHandles,
+};
 
-struct Explosion;
+pub struct Explosion;
 
 // Event to spawn explosion
 pub struct SpawnExplosion {
@@ -30,20 +34,41 @@ fn spawn_explosions(
             Team::Enemy => asset_handles.explosion_red.clone(),
         };
 
-        commands
-            .spawn_bundle(SpriteBundle {
-                material: explosion_material,
-                transform: Transform {
-                    translation: e.position,
+        if e.team == Team::Player {
+            commands
+                .spawn_bundle(SpriteBundle {
+                    material: explosion_material,
+                    transform: Transform {
+                        translation: e.position,
+                        ..Default::default()
+                    },
+                    visible: Visible {
+                        is_visible: true,
+                        is_transparent: true,
+                    },
                     ..Default::default()
-                },
-                visible: Visible {
-                    is_visible: true,
-                    is_transparent: true,
-                },
-                ..Default::default()
-            })
-            .insert(Explosion);
+                })
+                .insert(PlayerTeam)
+                .insert(CircleCollider(32.0))
+                .insert(Explosion);
+        } else {
+            commands
+                .spawn_bundle(SpriteBundle {
+                    material: explosion_material,
+                    transform: Transform {
+                        translation: e.position,
+                        ..Default::default()
+                    },
+                    visible: Visible {
+                        is_visible: true,
+                        is_transparent: true,
+                    },
+                    ..Default::default()
+                })
+                .insert(EnemyTeam)
+                .insert(CircleCollider(32.0))
+                .insert(Explosion);
+        }
     }
 }
 

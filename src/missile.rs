@@ -1,8 +1,12 @@
 use bevy::prelude::*;
 
-use crate::{explosion::SpawnExplosion, team::Team, AssetHandles, Velocity, MISSILE_VELOCITY};
+use crate::{
+    explosion::SpawnExplosion,
+    team::{EnemyTeam, PlayerTeam, Team},
+    AssetHandles, Velocity, MISSILE_VELOCITY,
+};
 
-struct Missile;
+pub struct Missile;
 
 // Position the missile should explode at if it doesn't hit anything
 struct Target(Vec3);
@@ -41,20 +45,45 @@ fn spawn_missiles(
             Team::Enemy => asset_handles.missile_red.clone(),
         };
 
-        commands
-            .spawn_bundle(SpriteBundle {
-                material: missile_material,
-                transform: Transform {
-                    translation: e.position,
-                    rotation: Quat::from_rotation_z(angle),
+        // let team = match e.team {
+        //     Team::Player => PlayerTeam,
+        //     Team::Enemy => EnemyTeam,
+        // };
+        // It seems like there isn't a way to conditionally choose which component
+        // to insert without just duplicating the whole commands sequence...
+        if e.team == Team::Player {
+            commands
+                .spawn_bundle(SpriteBundle {
+                    material: missile_material,
+                    transform: Transform {
+                        translation: e.position,
+                        rotation: Quat::from_rotation_z(angle),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            })
-            .insert(Velocity(velocity))
-            .insert(Target(e.target))
-            .insert(e.team)
-            .insert(Missile);
+                })
+                .insert(Velocity(velocity))
+                .insert(Target(e.target))
+                .insert(PlayerTeam)
+                .insert(Team::Player)
+                .insert(Missile);
+        } else {
+            commands
+                .spawn_bundle(SpriteBundle {
+                    material: missile_material,
+                    transform: Transform {
+                        translation: e.position,
+                        rotation: Quat::from_rotation_z(angle),
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                })
+                .insert(Velocity(velocity))
+                .insert(Target(e.target))
+                .insert(EnemyTeam)
+                .insert(Team::Enemy)
+                .insert(Missile);
+        }
     }
 }
 

@@ -1,10 +1,12 @@
 use bevy::prelude::*;
 
+mod collision;
 mod enemy_spawner;
 mod explosion;
 mod missile;
 mod team;
 
+use collision::CollisionPlugin;
 use enemy_spawner::EnemySpawnerPlugin;
 use explosion::ExplosionPlugin;
 use missile::{MissilePlugin, SpawnMissile};
@@ -203,6 +205,7 @@ fn main() {
         .add_plugin(MissilePlugin)
         .add_plugin(ExplosionPlugin)
         .add_plugin(EnemySpawnerPlugin)
+        .add_plugin(CollisionPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system())
