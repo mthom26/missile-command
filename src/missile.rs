@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{explosion::SpawnExplosion, AssetHandles, Velocity, MISSILE_VELOCITY};
+use crate::{explosion::SpawnExplosion, team::Team, AssetHandles, Velocity, MISSILE_VELOCITY};
 
 struct Missile;
 
@@ -11,6 +11,7 @@ struct Target(Vec3);
 pub struct SpawnMissile {
     pub position: Vec3,
     pub target: Vec3,
+    pub team: Team,
 }
 
 pub struct MissilePlugin;
@@ -35,9 +36,14 @@ fn spawn_missiles(
 
         let velocity = b.normalize() * MISSILE_VELOCITY;
 
+        let missile_material = match e.team {
+            Team::Player => asset_handles.missile_green.clone(),
+            Team::Enemy => asset_handles.missile_red.clone(),
+        };
+
         commands
             .spawn_bundle(SpriteBundle {
-                material: asset_handles.missile_green.clone(),
+                material: missile_material,
                 transform: Transform {
                     translation: e.position,
                     rotation: Quat::from_rotation_z(angle),
@@ -47,6 +53,7 @@ fn spawn_missiles(
             })
             .insert(Velocity(velocity))
             .insert(Target(e.target))
+            .insert(e.team)
             .insert(Missile);
     }
 }
@@ -54,13 +61,14 @@ fn spawn_missiles(
 fn check_target_reached(
     mut commands: Commands,
     mut events: EventWriter<SpawnExplosion>,
-    query: Query<(Entity, &Transform, &Target)>,
+    query: Query<(Entity, &Transform, &Target, &Team)>,
 ) {
-    for (entity, transform, target) in query.iter() {
+    for (entity, transform, target, team) in query.iter() {
         if transform.translation.distance_squared(target.0) < 10.0 {
             commands.entity(entity).despawn();
             events.send(SpawnExplosion {
                 position: transform.translation,
+                team: *team,
             });
         }
     }

@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 
+mod enemy_spawner;
 mod explosion;
 mod missile;
+mod team;
 
+use enemy_spawner::EnemySpawnerPlugin;
 use explosion::ExplosionPlugin;
 use missile::{MissilePlugin, SpawnMissile};
+use team::Team;
 
 const MISSILE_VELOCITY: f32 = 200.0;
 
@@ -145,24 +149,28 @@ fn shoot(
     }
 
     let target = Vec3::new(mouse_pos.position.x, mouse_pos.position.y, 0.0);
+    let team = Team::Player;
 
     if keys.just_pressed(KeyCode::A) {
         event.send(SpawnMissile {
             position: positions[0],
             target,
-        })
+            team,
+        });
     }
     if keys.just_pressed(KeyCode::S) {
         event.send(SpawnMissile {
             position: positions[1],
             target,
-        })
+            team,
+        });
     }
     if keys.just_pressed(KeyCode::D) {
         event.send(SpawnMissile {
             position: positions[2],
             target,
-        })
+            team,
+        });
     }
 }
 
@@ -194,6 +202,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(MissilePlugin)
         .add_plugin(ExplosionPlugin)
+        .add_plugin(EnemySpawnerPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system())

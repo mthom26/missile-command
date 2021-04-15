@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 
-use crate::AssetHandles;
+use crate::{team::Team, AssetHandles};
 
 struct Explosion;
 
 // Event to spawn explosion
 pub struct SpawnExplosion {
     pub position: Vec3,
+    pub team: Team,
 }
 
 pub struct ExplosionPlugin;
@@ -24,9 +25,14 @@ fn spawn_explosions(
     mut events: EventReader<SpawnExplosion>,
 ) {
     for e in events.iter() {
+        let explosion_material = match e.team {
+            Team::Player => asset_handles.explosion_green.clone(),
+            Team::Enemy => asset_handles.explosion_red.clone(),
+        };
+
         commands
             .spawn_bundle(SpriteBundle {
-                material: asset_handles.explosion_green.clone(),
+                material: explosion_material,
                 transform: Transform {
                     translation: e.position,
                     ..Default::default()
