@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{AssetHandles, Velocity, MISSILE_VELOCITY};
+use crate::{explosion::SpawnExplosion, AssetHandles, Velocity, MISSILE_VELOCITY};
 
 struct Missile;
 
@@ -51,11 +51,17 @@ fn spawn_missiles(
     }
 }
 
-fn check_target_reached(mut commands: Commands, query: Query<(Entity, &Transform, &Target)>) {
+fn check_target_reached(
+    mut commands: Commands,
+    mut events: EventWriter<SpawnExplosion>,
+    query: Query<(Entity, &Transform, &Target)>,
+) {
     for (entity, transform, target) in query.iter() {
         if transform.translation.distance_squared(target.0) < 10.0 {
             commands.entity(entity).despawn();
-            // TODO - Send event to spawn explosion
+            events.send(SpawnExplosion {
+                position: transform.translation,
+            });
         }
     }
 }

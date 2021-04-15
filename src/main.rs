@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
+mod explosion;
 mod missile;
 
+use explosion::ExplosionPlugin;
 use missile::{MissilePlugin, SpawnMissile};
 
 const MISSILE_VELOCITY: f32 = 200.0;
@@ -44,8 +46,8 @@ fn setup(
     let building_tex = asset_server.load("building.png");
     let missile_red_tex: Handle<Texture> = asset_server.load("missile_red.png");
     let missile_green_tex: Handle<Texture> = asset_server.load("missile_green.png");
-    let explosion_red_tex: Handle<Texture> = asset_server.load("explosion_red");
-    let explosion_green_tex: Handle<Texture> = asset_server.load("explosion_green");
+    let explosion_red_tex: Handle<Texture> = asset_server.load("explosion_red.png");
+    let explosion_green_tex: Handle<Texture> = asset_server.load("explosion_green.png");
 
     asset_handles.missile_red = materials.add(missile_red_tex.into());
     asset_handles.missile_green = materials.add(missile_green_tex.into());
@@ -191,6 +193,7 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.11, 0.11, 0.14)))
         .add_plugins(DefaultPlugins)
         .add_plugin(MissilePlugin)
+        .add_plugin(ExplosionPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system())
