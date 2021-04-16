@@ -6,7 +6,11 @@ use crate::{
     AssetHandles,
 };
 
+const BASE_SIZE: f32 = 32.0;
+
 pub struct Explosion;
+
+struct Size(f32);
 
 // Event to spawn explosion
 pub struct SpawnExplosion {
@@ -49,7 +53,8 @@ fn spawn_explosions(
                     ..Default::default()
                 })
                 .insert(PlayerTeam)
-                .insert(CircleCollider(32.0))
+                .insert(Size(1.0))
+                .insert(CircleCollider(BASE_SIZE))
                 .insert(Explosion);
         } else {
             commands
@@ -66,7 +71,8 @@ fn spawn_explosions(
                     ..Default::default()
                 })
                 .insert(EnemyTeam)
-                .insert(CircleCollider(32.0))
+                .insert(Size(1.0))
+                .insert(CircleCollider(BASE_SIZE))
                 .insert(Explosion);
         }
     }
@@ -75,15 +81,23 @@ fn spawn_explosions(
 fn update_explosions(
     mut commands: Commands,
     time: Res<Time>,
-    mut query: Query<(Entity, &Explosion, &mut Transform)>,
+    mut query: Query<(
+        Entity,
+        &Explosion,
+        &mut Size,
+        &mut Transform,
+        &mut CircleCollider,
+    )>,
 ) {
-    for (entity, _, mut transform) in query.iter_mut() {
-        transform.scale.x -= time.delta_seconds();
-        transform.scale.y -= time.delta_seconds();
+    for (entity, _, mut size, mut transform, mut collider) in query.iter_mut() {
+        size.0 -= time.delta_seconds();
+        transform.scale.x = size.0;
+        transform.scale.y = size.0;
+        collider.0 = BASE_SIZE * size.0;
 
         // Despawn explosion when it shrinks to zero size
         // TODO - Add easing so the explosion grows quickly then smoothly shrinks?
-        if transform.scale.x < 0.01 {
+        if size.0 < 0.01 {
             commands.entity(entity).despawn();
         }
     }
