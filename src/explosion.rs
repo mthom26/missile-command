@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     collision::CircleCollider,
+    state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
     AssetHandles,
 };
@@ -21,9 +22,11 @@ pub struct SpawnExplosion {
 pub struct ExplosionPlugin;
 impl Plugin for ExplosionPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_event::<SpawnExplosion>()
-            .add_system(spawn_explosions.system())
-            .add_system(update_explosions.system());
+        app.add_event::<SpawnExplosion>().add_system_set(
+            SystemSet::on_update(GameState::Game)
+                .with_system(spawn_explosions.system())
+                .with_system(update_explosions.system()),
+        );
     }
 }
 

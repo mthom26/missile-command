@@ -1,7 +1,7 @@
 use bevy::{prelude::*, utils::Duration};
 use rand::prelude::*;
 
-use crate::{missile::SpawnMissile, team::Team};
+use crate::{missile::SpawnMissile, state::GameState, team::Team};
 
 struct EnemyMissileSpawner {
     timer: Timer,
@@ -13,7 +13,7 @@ impl Plugin for EnemySpawnerPlugin {
         app.insert_resource(EnemyMissileSpawner {
             timer: Timer::new(Duration::from_secs_f32(2.0), true),
         })
-        .add_system(update_timer.system());
+        .add_system_set(SystemSet::on_update(GameState::Game).with_system(update_timer.system()));
     }
 }
 

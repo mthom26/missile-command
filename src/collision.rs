@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use crate::{
     explosion::Explosion,
     missile::Missile,
+    state::GameState,
     team::{EnemyTeam, PlayerTeam},
 };
 
@@ -11,7 +12,9 @@ pub struct CircleCollider(pub f32);
 pub struct CollisionPlugin;
 impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_system(update_collisions.system());
+        app.add_system_set(
+            SystemSet::on_update(GameState::Game).with_system(update_collisions.system()),
+        );
     }
 }
 

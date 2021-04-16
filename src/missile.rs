@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     explosion::SpawnExplosion,
+    state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
     AssetHandles, Velocity, MISSILE_VELOCITY,
 };
@@ -21,9 +22,11 @@ pub struct SpawnMissile {
 pub struct MissilePlugin;
 impl Plugin for MissilePlugin {
     fn build(&self, app: &mut AppBuilder) {
-        app.add_event::<SpawnMissile>()
-            .add_system(spawn_missiles.system())
-            .add_system(check_target_reached.system());
+        app.add_event::<SpawnMissile>().add_system_set(
+            SystemSet::on_update(GameState::Game)
+                .with_system(spawn_missiles.system())
+                .with_system(check_target_reached.system()),
+        );
     }
 }
 

@@ -3,13 +3,17 @@ use bevy::prelude::*;
 mod collision;
 mod enemy_spawner;
 mod explosion;
+mod main_menu;
 mod missile;
+mod state;
 mod team;
 
 use collision::CollisionPlugin;
 use enemy_spawner::EnemySpawnerPlugin;
 use explosion::ExplosionPlugin;
+use main_menu::MainMenuPlugin;
 use missile::{MissilePlugin, SpawnMissile};
+use state::GameState;
 use team::Team;
 
 const MISSILE_VELOCITY: f32 = 200.0;
@@ -34,37 +38,56 @@ struct MousePosition {
 
 #[derive(Default)]
 pub struct AssetHandles {
+    // Menu
+    pub button_normal: Handle<ColorMaterial>,
+    pub button_hover: Handle<ColorMaterial>,
+    pub button_click: Handle<ColorMaterial>,
+    pub font: Handle<Font>,
+
+    // Game
     pub missile_red: Handle<ColorMaterial>,
     pub missile_green: Handle<ColorMaterial>,
     pub explosion_red: Handle<ColorMaterial>,
     pub explosion_green: Handle<ColorMaterial>,
+    pub building: Handle<ColorMaterial>,
+    pub ground: Handle<ColorMaterial>,
+    pub silo: Handle<ColorMaterial>,
 }
 
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    windows: Res<Windows>,
     mut asset_handles: ResMut<AssetHandles>, // textures: Res<Assets<Texture>>
 ) {
-    let silo_tex = asset_server.load("missile_silo.png");
-    let ground_tex = asset_server.load("ground.png");
-    let building_tex = asset_server.load("building.png");
+    let silo_tex: Handle<Texture> = asset_server.load("missile_silo.png");
+    let ground_tex: Handle<Texture> = asset_server.load("ground.png");
+    let building_tex: Handle<Texture> = asset_server.load("building.png");
     let missile_red_tex: Handle<Texture> = asset_server.load("missile_red.png");
     let missile_green_tex: Handle<Texture> = asset_server.load("missile_green.png");
     let explosion_red_tex: Handle<Texture> = asset_server.load("explosion_red.png");
     let explosion_green_tex: Handle<Texture> = asset_server.load("explosion_green.png");
 
+    asset_handles.font = asset_server.load("BlocTekRegular-gxEZ4.ttf");
+    asset_handles.button_normal = materials.add(Color::rgb(0.15, 0.15, 0.15).into());
+    asset_handles.button_hover = materials.add(Color::rgb(0.35, 0.35, 0.35).into());
+    asset_handles.button_click = materials.add(Color::rgb(0.35, 0.85, 0.35).into());
     asset_handles.missile_red = materials.add(missile_red_tex.into());
     asset_handles.missile_green = materials.add(missile_green_tex.into());
     asset_handles.explosion_red = materials.add(explosion_red_tex.into());
     asset_handles.explosion_green = materials.add(explosion_green_tex.into());
+    asset_handles.building = materials.add(building_tex.into());
+    asset_handles.ground = materials.add(ground_tex.into());
+    asset_handles.silo = materials.add(silo_tex.into());
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(UiCameraBundle::default());
+}
 
+fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows: Res<Windows>) {
     // Ground
     commands.spawn_bundle(SpriteBundle {
-        material: materials.add(ground_tex.into()),
+        material: asset_handles.ground.clone(),
         transform: Transform {
             translation: Vec3::new(0.0, -328.0, 0.0),
             scale: Vec3::new(2.0, 1.0, 1.0),
@@ -110,7 +133,7 @@ fn setup(
 
                 commands
                     .spawn_bundle(SpriteBundle {
-                        material: materials.add(silo_tex.clone().into()),
+                        material: asset_handles.silo.clone(),
                         transform: Transform {
                             translation: Vec3::new(x, y, 0.0),
                             ..Default::default()
@@ -124,7 +147,7 @@ fn setup(
                 let y = 32.0 - 328.0 + 32.0;
 
                 commands.spawn_bundle(SpriteBundle {
-                    material: materials.add(building_tex.clone().into()),
+                    material: asset_handles.building.clone(),
                     transform: Transform {
                         translation: Vec3::new(x, y, 0.0),
                         ..Default::default()
@@ -201,17 +224,23 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(ClearColor(Color::rgb(0.11, 0.11, 0.14)))
+        .add_state(GameState::Game)
         .add_plugins(DefaultPlugins)
+        .add_plugin(MainMenuPlugin)
         .add_plugin(MissilePlugin)
         .add_plugin(ExplosionPlugin)
         .add_plugin(EnemySpawnerPlugin)
         .add_plugin(CollisionPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
-        .add_startup_system(setup.system())
+        .add_startup_system(setup.system().label("setup"))
         .add_system(bevy::input::system::exit_on_esc_system.system())
         .add_system(get_mouse_pos.system().label("get_mouse_position"))
-        .add_system(shoot.system().after("get_mouse_position"))
-        .add_system(apply_velocity.system())
+        .add_system_set(SystemSet::on_enter(GameState::Game).with_system(setup_game.system()))
+        .add_system_set(
+            SystemSet::on_update(GameState::Game)
+                .with_system(shoot.system().after("get_mouse_position"))
+                .with_system(apply_velocity.system()),
+        )
         .run();
 }
