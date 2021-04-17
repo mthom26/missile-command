@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{app::AppExit, prelude::*};
 
 use crate::{state::GameState, AssetHandles};
 
@@ -14,7 +14,9 @@ impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
             SystemSet::on_enter(GameState::MainMenu).with_system(setup_menu.system()),
-        );
+        )
+        .add_system_set(SystemSet::on_update(GameState::MainMenu).with_system(update_menu.system()))
+        .add_system_set(SystemSet::on_exit(GameState::MainMenu).with_system(despawn.system()));
     }
 }
 
@@ -132,4 +134,34 @@ fn setup_menu(
                         });
                 });
         });
+}
+
+fn update_menu(
+    asset_handles: Res<AssetHandles>,
+    mut query: Query<
+        (&Interaction, &mut Handle<ColorMaterial>, &MainMenuButton),
+        Changed<Interaction>,
+    >,
+    mut state: ResMut<State<GameState>>,
+    mut events: EventWriter<AppExit>,
+) {
+    for (interaction, mut material, button) in query.iter_mut() {
+        match interaction {
+            Interaction::Clicked => {
+                *material = asset_handles.button_click.clone();
+                match button {
+                    MainMenuButton::Play => state.set(GameState::Game).unwrap(),
+                    MainMenuButton::Quit => events.send(AppExit),
+                }
+            }
+            Interaction::Hovered => *material = asset_handles.button_hover.clone(),
+            Interaction::None => *material = asset_handles.button_normal.clone(),
+        }
+    }
+}
+
+fn despawn(mut commands: Commands, query: Query<(Entity, &MainMenuUi)>) {
+    for (entity, _) in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
 }

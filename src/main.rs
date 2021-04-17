@@ -224,7 +224,7 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(ClearColor(Color::rgb(0.11, 0.11, 0.14)))
-        .add_state(GameState::Game)
+        .add_state(GameState::MainMenu)
         .add_plugins(DefaultPlugins)
         .add_plugin(MainMenuPlugin)
         .add_plugin(MissilePlugin)
