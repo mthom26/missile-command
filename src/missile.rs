@@ -2,6 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     explosion::SpawnExplosion,
+    line_trail::SpawnLineTrail,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
     AssetHandles, Velocity, MISSILE_VELOCITY,
@@ -34,6 +35,7 @@ fn spawn_missiles(
     asset_handles: Res<AssetHandles>,
     mut commands: Commands,
     mut events: EventReader<SpawnMissile>,
+    mut line_events: EventWriter<SpawnLineTrail>,
 ) {
     for e in events.iter() {
         let a = Vec2::new(0.0, 1.0);
@@ -54,7 +56,7 @@ fn spawn_missiles(
         // };
         // It seems like there isn't a way to conditionally choose which component
         // to insert without just duplicating the whole commands sequence...
-        if e.team == Team::Player {
+        let missile_id = if e.team == Team::Player {
             commands
                 .spawn_bundle(SpriteBundle {
                     material: missile_material,
@@ -69,7 +71,8 @@ fn spawn_missiles(
                 .insert(Target(e.target))
                 .insert(PlayerTeam)
                 .insert(Team::Player)
-                .insert(Missile);
+                .insert(Missile)
+                .id()
         } else {
             commands
                 .spawn_bundle(SpriteBundle {
@@ -85,8 +88,18 @@ fn spawn_missiles(
                 .insert(Target(e.target))
                 .insert(EnemyTeam)
                 .insert(Team::Enemy)
-                .insert(Missile);
-        }
+                .insert(Missile)
+                .id()
+        };
+
+        // Spawn Line Trail
+        // TODO - Send appropriate color
+        line_events.send(SpawnLineTrail {
+            position: e.position,
+            rotation: angle,
+            velocity,
+            owner: missile_id,
+        });
     }
 }
 

@@ -170,7 +170,6 @@ fn shoot(
     mouse_pos: Res<MousePosition>,
     query: Query<(&Silo, &Transform)>,
     mut event: EventWriter<SpawnMissile>,
-    mut line_event: EventWriter<SpawnLineTrail>,
 ) {
     // Could probably just put the silo positions in a resource on startup,
     // they should only change on screen resize
@@ -202,13 +201,6 @@ fn shoot(
             position: positions[2],
             target,
             team,
-        });
-    }
-
-    if keys.just_pressed(KeyCode::F) {
-        line_event.send(SpawnLineTrail {
-            position: Vec3::new(0.0, 0.0, 0.0),
-            rotation: 0.0,
         });
     }
 }
