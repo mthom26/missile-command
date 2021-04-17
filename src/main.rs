@@ -1,8 +1,9 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::pipeline::PipelineDescriptor};
 
 mod collision;
 mod enemy_spawner;
 mod explosion;
+mod line_trail;
 mod main_menu;
 mod missile;
 mod state;
@@ -11,6 +12,7 @@ mod team;
 use collision::CollisionPlugin;
 use enemy_spawner::EnemySpawnerPlugin;
 use explosion::ExplosionPlugin;
+use line_trail::{LineTrailPlugin, SpawnLineTrail};
 use main_menu::MainMenuPlugin;
 use missile::{MissilePlugin, SpawnMissile};
 use state::GameState;
@@ -52,6 +54,10 @@ pub struct AssetHandles {
     pub building: Handle<ColorMaterial>,
     pub ground: Handle<ColorMaterial>,
     pub silo: Handle<ColorMaterial>,
+
+    // Line Trail
+    pub line_trail: Handle<Mesh>,
+    pub line_trail_pipeline: Handle<PipelineDescriptor>,
 }
 
 fn setup(
@@ -164,6 +170,7 @@ fn shoot(
     mouse_pos: Res<MousePosition>,
     query: Query<(&Silo, &Transform)>,
     mut event: EventWriter<SpawnMissile>,
+    mut line_event: EventWriter<SpawnLineTrail>,
 ) {
     // Could probably just put the silo positions in a resource on startup,
     // they should only change on screen resize
@@ -197,6 +204,13 @@ fn shoot(
             team,
         });
     }
+
+    if keys.just_pressed(KeyCode::F) {
+        line_event.send(SpawnLineTrail {
+            position: Vec3::new(0.0, 0.0, 0.0),
+            rotation: 0.0,
+        });
+    }
 }
 
 fn get_mouse_pos(mut cursor_evt: EventReader<CursorMoved>, mut mouse_pos: ResMut<MousePosition>) {
@@ -224,13 +238,14 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(ClearColor(Color::rgb(0.11, 0.11, 0.14)))
-        .add_state(GameState::MainMenu)
+        .add_state(GameState::Game)
         .add_plugins(DefaultPlugins)
         .add_plugin(MainMenuPlugin)
         .add_plugin(MissilePlugin)
         .add_plugin(ExplosionPlugin)
         .add_plugin(EnemySpawnerPlugin)
         .add_plugin(CollisionPlugin)
+        .add_plugin(LineTrailPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))
