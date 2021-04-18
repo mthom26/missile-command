@@ -12,7 +12,7 @@ mod team;
 use collision::CollisionPlugin;
 use enemy_spawner::EnemySpawnerPlugin;
 use explosion::ExplosionPlugin;
-use line_trail::{LineTrailPlugin, SpawnLineTrail};
+use line_trail::{LineMaterial, LineTrailPlugin};
 use main_menu::MainMenuPlugin;
 use missile::{MissilePlugin, SpawnMissile};
 use state::GameState;
@@ -58,6 +58,8 @@ pub struct AssetHandles {
     // Line Trail
     pub line_trail: Handle<Mesh>,
     pub line_trail_pipeline: Handle<PipelineDescriptor>,
+    pub player_line_trail_material: Handle<LineMaterial>,
+    pub enemy_line_trail_material: Handle<LineMaterial>,
 }
 
 fn setup(

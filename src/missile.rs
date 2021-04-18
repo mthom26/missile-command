@@ -99,6 +99,7 @@ fn spawn_missiles(
             rotation: angle,
             velocity,
             owner: missile_id,
+            team: e.team,
         });
     }
 }

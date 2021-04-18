@@ -1,13 +1,16 @@
 use bevy::{
     prelude::*,
+    reflect::TypeUuid,
     render::{
         mesh::Indices,
         pipeline::{PipelineDescriptor, PrimitiveTopology, RenderPipeline},
+        render_graph::{base, AssetRenderResourcesNode, RenderGraph},
+        renderer::RenderResources,
         shader::{ShaderStage, ShaderStages},
     },
 };
 
-use crate::{state::GameState, AssetHandles, Velocity};
+use crate::{state::GameState, team::Team, AssetHandles, Velocity};
 
 const VERTEX_SHADER: &str = include_str!("shader.vert");
 const FRAGMENT_SHADER: &str = include_str!("shader.frag");
@@ -20,18 +23,26 @@ struct LineTrail {
     owner: Entity, // The missile that spawned the LineTrail
 }
 
+#[derive(RenderResources, Default, TypeUuid)]
+#[uuid = "1e08866c-0b8a-437e-8bce-37733b25127e"]
+pub struct LineMaterial {
+    pub color: Color,
+}
+
 // Event to spawn LineTrail
 pub struct SpawnLineTrail {
     pub position: Vec3,
     pub velocity: Vec2,
     pub rotation: f32,
     pub owner: Entity,
+    pub team: Team,
 }
 
 pub struct LineTrailPlugin;
 impl Plugin for LineTrailPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<SpawnLineTrail>()
+            .add_asset::<LineMaterial>()
             .add_startup_system(setup.system())
             .add_system_set(
                 SystemSet::on_update(GameState::Game)
@@ -48,7 +59,17 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut pipelines: ResMut<Assets<PipelineDescriptor>>,
     mut shaders: ResMut<Assets<Shader>>,
+    mut materials: ResMut<Assets<LineMaterial>>,
+    mut render_graph: ResMut<RenderGraph>,
 ) {
+    render_graph.add_system_node(
+        "line_material",
+        AssetRenderResourcesNode::<LineMaterial>::new(true),
+    );
+    render_graph
+        .add_node_edge("line_material", base::node::MAIN_PASS)
+        .unwrap();
+
     let pipeline_handle = pipelines.add(PipelineDescriptor::default_config(ShaderStages {
         vertex: shaders.add(Shader::from_glsl(ShaderStage::Vertex, VERTEX_SHADER)),
         fragment: Some(shaders.add(Shader::from_glsl(ShaderStage::Fragment, FRAGMENT_SHADER))),
@@ -77,6 +98,12 @@ fn setup(
 
     asset_handles.line_trail = meshes.add(rect);
     asset_handles.line_trail_pipeline = pipeline_handle;
+    asset_handles.player_line_trail_material = materials.add(LineMaterial {
+        color: Color::rgb(0.3, 0.9, 0.2),
+    });
+    asset_handles.enemy_line_trail_material = materials.add(LineMaterial {
+        color: Color::rgb(0.9, 0.3, 0.2),
+    });
 }
 
 fn spawn_line_trails(
@@ -85,6 +112,11 @@ fn spawn_line_trails(
     mut events: EventReader<SpawnLineTrail>,
 ) {
     for e in events.iter() {
+        let mat = match e.team {
+            Team::Player => asset_handles.player_line_trail_material.clone(),
+            Team::Enemy => asset_handles.enemy_line_trail_material.clone(),
+        };
+
         commands
             .spawn_bundle(MeshBundle {
                 mesh: asset_handles.line_trail.clone(),
@@ -99,6 +131,7 @@ fn spawn_line_trails(
                 ..Default::default()
             })
             .insert(LineTrail { owner: e.owner })
+            .insert(mat)
             .insert(Velocity(e.velocity));
     }
 }
