@@ -1,4 +1,5 @@
 use bevy::{prelude::*, render::pipeline::PipelineDescriptor};
+use rand::prelude::*;
 
 mod collision;
 mod enemy_spawner;
@@ -51,7 +52,9 @@ pub struct AssetHandles {
     pub missile_green: Handle<ColorMaterial>,
     pub explosion_red: Handle<ColorMaterial>,
     pub explosion_green: Handle<ColorMaterial>,
-    pub building: Handle<ColorMaterial>,
+    pub building_01: Handle<ColorMaterial>,
+    pub building_02: Handle<ColorMaterial>,
+    pub building_03: Handle<ColorMaterial>,
     pub ground: Handle<ColorMaterial>,
     pub silo: Handle<ColorMaterial>,
 
@@ -70,7 +73,9 @@ fn setup(
 ) {
     let silo_tex: Handle<Texture> = asset_server.load("missile_silo.png");
     let ground_tex: Handle<Texture> = asset_server.load("ground.png");
-    let building_tex: Handle<Texture> = asset_server.load("building.png");
+    let building_01_tex: Handle<Texture> = asset_server.load("building_01.png");
+    let building_02_tex: Handle<Texture> = asset_server.load("building_02.png");
+    let building_03_tex: Handle<Texture> = asset_server.load("building_03.png");
     let missile_red_tex: Handle<Texture> = asset_server.load("missile_red.png");
     let missile_green_tex: Handle<Texture> = asset_server.load("missile_green.png");
     let explosion_red_tex: Handle<Texture> = asset_server.load("explosion_red.png");
@@ -84,7 +89,9 @@ fn setup(
     asset_handles.missile_green = materials.add(missile_green_tex.into());
     asset_handles.explosion_red = materials.add(explosion_red_tex.into());
     asset_handles.explosion_green = materials.add(explosion_green_tex.into());
-    asset_handles.building = materials.add(building_tex.into());
+    asset_handles.building_01 = materials.add(building_01_tex.into());
+    asset_handles.building_02 = materials.add(building_02_tex.into());
+    asset_handles.building_03 = materials.add(building_03_tex.into());
     asset_handles.ground = materials.add(ground_tex.into());
     asset_handles.silo = materials.add(silo_tex.into());
 
@@ -151,11 +158,21 @@ fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows:
                     .insert(silo);
             }
             _ => {
+                let mut rng = thread_rng();
+                let rand: usize = rng.gen_range(0..3);
+                let building_material = match rand {
+                    0 => asset_handles.building_01.clone(),
+                    1 => asset_handles.building_02.clone(),
+                    2 => asset_handles.building_03.clone(),
+                    // Maybe a panic isn't really needed here...
+                    _ => panic!("Error choosing building material.")
+                };
+
                 let x = (step_size * i as f32) + half_step - half_width;
                 let y = 32.0 - 328.0 + 32.0;
 
                 commands.spawn_bundle(SpriteBundle {
-                    material: asset_handles.building.clone(),
+                    material: building_material,
                     transform: Transform {
                         translation: Vec3::new(x, y, 0.0),
                         ..Default::default()
