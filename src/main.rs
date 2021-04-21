@@ -32,6 +32,8 @@ enum SiloLocation {
     Right,
 }
 
+struct Building;
+
 struct Velocity(Vec2);
 
 #[derive(Default)]
@@ -165,20 +167,22 @@ fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows:
                     1 => asset_handles.building_02.clone(),
                     2 => asset_handles.building_03.clone(),
                     // Maybe a panic isn't really needed here...
-                    _ => panic!("Error choosing building material.")
+                    _ => panic!("Error choosing building material."),
                 };
 
                 let x = (step_size * i as f32) + half_step - half_width;
                 let y = 32.0 - 328.0 + 32.0;
 
-                commands.spawn_bundle(SpriteBundle {
-                    material: building_material,
-                    transform: Transform {
-                        translation: Vec3::new(x, y, 0.0),
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        material: building_material,
+                        transform: Transform {
+                            translation: Vec3::new(x, y, 0.0),
+                            ..Default::default()
+                        },
                         ..Default::default()
-                    },
-                    ..Default::default()
-                });
+                    })
+                    .insert(Building);
             }
         }
     }
