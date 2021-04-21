@@ -7,6 +7,7 @@ mod explosion;
 mod line_trail;
 mod main_menu;
 mod missile;
+mod score_ui;
 mod state;
 mod team;
 
@@ -16,6 +17,7 @@ use explosion::ExplosionPlugin;
 use line_trail::{LineMaterial, LineTrailPlugin};
 use main_menu::MainMenuPlugin;
 use missile::{MissilePlugin, SpawnMissile};
+use score_ui::ScoreUiPlugin;
 use state::GameState;
 use team::Team;
 
@@ -261,6 +263,7 @@ fn main() {
         .add_plugin(EnemySpawnerPlugin)
         .add_plugin(CollisionPlugin)
         .add_plugin(LineTrailPlugin)
+        .add_plugin(ScoreUiPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))
