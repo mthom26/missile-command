@@ -2,6 +2,7 @@ use bevy::{prelude::*, render::pipeline::PipelineDescriptor};
 use rand::prelude::*;
 
 mod collision;
+mod debris;
 mod enemy_spawner;
 mod explosion;
 mod line_trail;
@@ -12,6 +13,7 @@ mod state;
 mod team;
 
 use collision::CollisionPlugin;
+use debris::DebrisPlugin;
 use enemy_spawner::EnemySpawnerPlugin;
 use explosion::ExplosionPlugin;
 use line_trail::{LineMaterial, LineTrailPlugin};
@@ -61,6 +63,8 @@ pub struct AssetHandles {
     pub building_03: Handle<ColorMaterial>,
     pub ground: Handle<ColorMaterial>,
     pub silo: Handle<ColorMaterial>,
+    pub debris_01: Handle<ColorMaterial>,
+    pub silo_debris_01: Handle<ColorMaterial>,
 
     // Line Trail
     pub line_trail: Handle<Mesh>,
@@ -84,6 +88,8 @@ fn setup(
     let missile_green_tex: Handle<Texture> = asset_server.load("missile_green.png");
     let explosion_red_tex: Handle<Texture> = asset_server.load("explosion_red.png");
     let explosion_green_tex: Handle<Texture> = asset_server.load("explosion_green.png");
+    let debris_01: Handle<Texture> = asset_server.load("debris_01.png");
+    let silo_debris_01: Handle<Texture> = asset_server.load("silo_debris_01.png");
 
     asset_handles.font = asset_server.load("BlocTekRegular-gxEZ4.ttf");
     asset_handles.button_normal = materials.add(Color::rgb(0.15, 0.15, 0.15).into());
@@ -98,6 +104,8 @@ fn setup(
     asset_handles.building_03 = materials.add(building_03_tex.into());
     asset_handles.ground = materials.add(ground_tex.into());
     asset_handles.silo = materials.add(silo_tex.into());
+    asset_handles.debris_01 = materials.add(debris_01.into());
+    asset_handles.silo_debris_01 = materials.add(silo_debris_01.into());
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
@@ -264,6 +272,7 @@ fn main() {
         .add_plugin(CollisionPlugin)
         .add_plugin(LineTrailPlugin)
         .add_plugin(ScoreUiPlugin)
+        .add_plugin(DebrisPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))

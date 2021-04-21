@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    debris::{DebrisType, SpawnDebris},
     explosion::{Explosion, SpawnExplosion},
     missile::Missile,
     score_ui::UpdateScoreUi,
@@ -81,12 +82,13 @@ fn enemy_missile_collisions(
         Or<(With<Building>, With<Silo>)>,
     >,
     mut events: EventWriter<SpawnExplosion>,
+    mut debris_events: EventWriter<SpawnDebris>,
 ) {
     for (missile, _, _, missile_transform) in enemy_missiles.iter() {
         let m_x = missile_transform.translation.x;
         let m_y = missile_transform.translation.y;
 
-        for (_, structure_transform, b) in player_structures.iter() {
+        for (structure_entity, structure_transform, b) in player_structures.iter() {
             let s_x = structure_transform.translation.x;
             let s_y = structure_transform.translation.y;
 
@@ -98,9 +100,14 @@ fn enemy_missile_collisions(
 
                 if check_collision(m_x, m_y, s_x, s_y, half_width, half_height, y_offset) {
                     commands.entity(missile).despawn();
+                    commands.entity(structure_entity).despawn();
                     events.send(SpawnExplosion {
                         position: missile_transform.translation,
                         team: Team::Enemy,
+                    });
+                    debris_events.send(SpawnDebris {
+                        x_position: structure_transform.translation.x,
+                        debris_type: DebrisType::Building,
                     });
                 }
             } else {
@@ -111,9 +118,14 @@ fn enemy_missile_collisions(
 
                 if check_collision(m_x, m_y, s_x, s_y, half_width, half_height, y_offset) {
                     commands.entity(missile).despawn();
+                    commands.entity(structure_entity).despawn();
                     events.send(SpawnExplosion {
                         position: missile_transform.translation,
                         team: Team::Enemy,
+                    });
+                    debris_events.send(SpawnDebris {
+                        x_position: structure_transform.translation.x,
+                        debris_type: DebrisType::Silo,
                     });
                 }
             }
