@@ -6,22 +6,20 @@ mod debris;
 mod enemy_spawner;
 mod explosion;
 mod line_trail;
-mod main_menu;
 mod missile;
-mod score_ui;
 mod state;
 mod team;
+mod ui;
 
 use collision::CollisionPlugin;
-use debris::DebrisPlugin;
+use debris::{DebrisPlugin, DebrisType};
 use enemy_spawner::EnemySpawnerPlugin;
-use explosion::ExplosionPlugin;
-use line_trail::{LineMaterial, LineTrailPlugin};
-use main_menu::MainMenuPlugin;
-use missile::{MissilePlugin, SpawnMissile};
-use score_ui::ScoreUiPlugin;
+use explosion::{Explosion, ExplosionPlugin};
+use line_trail::{LineMaterial, LineTrail, LineTrailPlugin};
+use missile::{Missile, MissilePlugin, SpawnMissile};
 use state::GameState;
 use team::Team;
+use ui::{GameOverPlugin, MainMenuPlugin, ScoreUiPlugin};
 
 const MISSILE_VELOCITY: f32 = 200.0;
 
@@ -37,6 +35,8 @@ enum SiloLocation {
 }
 
 struct Building;
+
+struct Ground;
 
 struct Velocity(Vec2);
 
@@ -113,15 +113,17 @@ fn setup(
 
 fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows: Res<Windows>) {
     // Ground
-    commands.spawn_bundle(SpriteBundle {
-        material: asset_handles.ground.clone(),
-        transform: Transform {
-            translation: Vec3::new(0.0, -328.0, 0.0),
-            scale: Vec3::new(2.0, 1.0, 1.0),
+    commands
+        .spawn_bundle(SpriteBundle {
+            material: asset_handles.ground.clone(),
+            transform: Transform {
+                translation: Vec3::new(0.0, -328.0, 0.0),
+                scale: Vec3::new(2.0, 1.0, 1.0),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    });
+        })
+        .insert(Ground);
 
     // Silos and Buildings
     let (width, half_width) = if let Some(window) = windows.get_primary() {
@@ -256,6 +258,38 @@ fn apply_velocity(time: Res<Time>, mut query: Query<(&Velocity, &mut Transform)>
     }
 }
 
+fn despawn_game(
+    mut commands: Commands,
+    query: Query<
+        Entity,
+        Or<(
+            With<Building>,
+            With<Silo>,
+            With<DebrisType>,
+            With<Missile>,
+            With<Explosion>,
+            With<LineTrail>,
+            With<Ground>,
+        )>,
+    >,
+) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn();
+    }
+}
+
+fn check_game_over(query: Query<&Building>, mut state: ResMut<State<GameState>>) {
+    let mut live_buildings = 0;
+
+    for _ in query.iter() {
+        live_buildings += 1;
+    }
+
+    if live_buildings == 0 {
+        state.set(GameState::GameOver).unwrap();
+    }
+}
+
 fn main() {
     App::build()
         .insert_resource(WindowDescriptor {
@@ -273,6 +307,7 @@ fn main() {
         .add_plugin(LineTrailPlugin)
         .add_plugin(ScoreUiPlugin)
         .add_plugin(DebrisPlugin)
+        .add_plugin(GameOverPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))
@@ -282,7 +317,9 @@ fn main() {
         .add_system_set(
             SystemSet::on_update(GameState::Game)
                 .with_system(shoot.system().after("get_mouse_position"))
-                .with_system(apply_velocity.system()),
+                .with_system(apply_velocity.system())
+                .with_system(check_game_over.system()),
         )
+        .add_system_set(SystemSet::on_exit(GameState::Game).with_system(despawn_game.system()))
         .run();
 }

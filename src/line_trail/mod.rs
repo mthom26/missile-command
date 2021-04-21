@@ -19,7 +19,7 @@ const MAX_LINE_LENGTH: f32 = 100.0;
 const LINE_GROWTH_SPEED: f32 = 80.0;
 const LINE_WIDTH: f32 = 3.0;
 
-struct LineTrail {
+pub struct LineTrail {
     owner: Entity, // The missile that spawned the LineTrail
 }
 

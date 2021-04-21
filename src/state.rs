@@ -3,4 +3,5 @@ pub enum GameState {
     MainMenu,
     Game,
     Paused,
+    GameOver,
 }

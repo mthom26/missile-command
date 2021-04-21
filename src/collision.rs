@@ -4,9 +4,9 @@ use crate::{
     debris::{DebrisType, SpawnDebris},
     explosion::{Explosion, SpawnExplosion},
     missile::Missile,
-    score_ui::UpdateScoreUi,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
+    ui::UpdateScoreUi,
     Building, Silo,
 };
 
