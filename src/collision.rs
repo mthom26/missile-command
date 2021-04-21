@@ -17,7 +17,8 @@ impl Plugin for CollisionPlugin {
             SystemSet::on_update(GameState::Game)
                 .with_system(update_collisions.system())
                 .with_system(missile_collisions.system())
-                .with_system(enemy_missile_collisions.system()),
+                .with_system(enemy_missile_collisions.system())
+                .with_system(missile_ground_collisions.system()),
         );
     }
 }
@@ -111,6 +112,22 @@ fn enemy_missile_collisions(
                     });
                 }
             }
+        }
+    }
+}
+
+fn missile_ground_collisions(
+    mut commands: Commands,
+    missiles: Query<(Entity, &Missile, &Transform, &Team)>,
+    mut events: EventWriter<SpawnExplosion>,
+) {
+    for (entity, _, transform, team) in missiles.iter() {
+        if transform.translation.y < -296.0 {
+            commands.entity(entity).despawn();
+            events.send(SpawnExplosion {
+                position: transform.translation,
+                team: *team,
+            })
         }
     }
 }
