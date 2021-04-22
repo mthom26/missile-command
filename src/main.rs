@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::pipeline::PipelineDescriptor};
+use bevy::{prelude::*, render::pipeline::PipelineDescriptor, utils::Duration};
 use rand::prelude::*;
 
 mod collision;
@@ -7,6 +7,7 @@ mod enemy_spawner;
 mod explosion;
 mod line_trail;
 mod missile;
+mod silo;
 mod state;
 mod team;
 mod ui;
@@ -17,22 +18,14 @@ use enemy_spawner::EnemySpawnerPlugin;
 use explosion::{Explosion, ExplosionPlugin};
 use line_trail::{LineMaterial, LineTrail, LineTrailPlugin};
 use missile::{Missile, MissilePlugin, SpawnMissile};
+use silo::{Silo, SiloLocation, SiloPlugin, SiloReloadUi};
 use state::GameState;
 use team::Team;
 use ui::{GameOverPlugin, MainMenuPlugin, ScoreUiPlugin};
 
 const MISSILE_VELOCITY: f32 = 200.0;
-
-struct Silo {
-    location: SiloLocation,
-}
-
-#[derive(PartialEq, Debug)]
-enum SiloLocation {
-    Left,
-    Middle,
-    Right,
-}
+const SILO_RELOAD_TIME: f32 = 3.0;
+const SILO_MAX_MISSILES: u8 = 3;
 
 struct Building;
 
@@ -65,6 +58,8 @@ pub struct AssetHandles {
     pub silo: Handle<ColorMaterial>,
     pub debris_01: Handle<ColorMaterial>,
     pub silo_debris_01: Handle<ColorMaterial>,
+    pub silo_reload_loading: Handle<ColorMaterial>,
+    pub silo_reload_ready: Handle<ColorMaterial>,
 
     // Line Trail
     pub line_trail: Handle<Mesh>,
@@ -106,6 +101,14 @@ fn setup(
     asset_handles.silo = materials.add(silo_tex.into());
     asset_handles.debris_01 = materials.add(debris_01.into());
     asset_handles.silo_debris_01 = materials.add(silo_debris_01.into());
+    asset_handles.silo_reload_loading = materials.add(ColorMaterial {
+        color: Color::rgb(0.9, 0.9, 0.3),
+        texture: None,
+    });
+    asset_handles.silo_reload_ready = materials.add(ColorMaterial {
+        color: Color::rgb(0.3, 0.9, 0.3),
+        texture: None,
+    });
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
@@ -147,17 +150,16 @@ fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows:
                 //        proper variables for clarity
                 let y = 16.0 - 328.0 + 32.0;
 
-                let silo = match i {
-                    0 => Silo {
-                        location: SiloLocation::Left,
-                    },
-                    4 => Silo {
-                        location: SiloLocation::Middle,
-                    },
-                    8 => Silo {
-                        location: SiloLocation::Right,
-                    },
+                let silo_location = match i {
+                    0 => SiloLocation::Left,
+                    4 => SiloLocation::Middle,
+                    8 => SiloLocation::Right,
                     _ => panic!("How the hell did this happen!?"),
+                };
+
+                let silo = Silo {
+                    location: silo_location,
+                    missiles: SILO_MAX_MISSILES - 1,
                 };
 
                 commands
@@ -169,7 +171,25 @@ fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows:
                         },
                         ..Default::default()
                     })
-                    .insert(silo);
+                    .insert(silo)
+                    .insert(Timer::new(Duration::from_secs_f32(SILO_RELOAD_TIME), false));
+
+                // Reload Ui
+                commands
+                    .spawn_bundle(SpriteBundle {
+                        sprite: Sprite {
+                            size: Vec2::new(50.0, 10.0),
+                            ..Default::default()
+                        },
+                        material: asset_handles.silo_reload_loading.clone(),
+                        transform: Transform {
+                            translation: Vec3::new(x, y - 50.0, 0.0),
+                            ..Default::default()
+                        },
+                        ..Default::default()
+                    })
+                    .insert(SiloReloadUi)
+                    .insert(silo_location);
             }
             _ => {
                 let mut rng = thread_rng();
@@ -203,40 +223,29 @@ fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows:
 fn shoot(
     keys: Res<Input<KeyCode>>,
     mouse_pos: Res<MousePosition>,
-    query: Query<(&Silo, &Transform)>,
-    mut event: EventWriter<SpawnMissile>,
+    mut query: Query<(&mut Silo, &mut Timer, &Transform)>,
+    mut events: EventWriter<SpawnMissile>,
 ) {
-    // Could probably just put the silo positions in a resource on startup,
-    // they should only change on screen resize
-    let mut positions = [Vec3::ZERO; 3];
-    for (i, (_, transform)) in query.iter().enumerate() {
-        positions[i] = transform.translation;
-        positions[i].y += 10.0;
-    }
-
     let target = Vec3::new(mouse_pos.position.x, mouse_pos.position.y, 0.0);
     let team = Team::Player;
 
-    if keys.just_pressed(KeyCode::A) {
-        event.send(SpawnMissile {
-            position: positions[0],
-            target,
-            team,
-        });
-    }
-    if keys.just_pressed(KeyCode::S) {
-        event.send(SpawnMissile {
-            position: positions[1],
-            target,
-            team,
-        });
-    }
-    if keys.just_pressed(KeyCode::D) {
-        event.send(SpawnMissile {
-            position: positions[2],
-            target,
-            team,
-        });
+    for (mut silo, mut timer, transform) in query.iter_mut() {
+        if silo.missiles > 0 {
+            if silo.location == SiloLocation::Left && keys.just_pressed(KeyCode::A)
+                || silo.location == SiloLocation::Middle && keys.just_pressed(KeyCode::S)
+                || silo.location == SiloLocation::Right && keys.just_pressed(KeyCode::D)
+            {
+                silo.missiles -= 1;
+                if timer.finished() {
+                    timer.reset();
+                }
+                events.send(SpawnMissile {
+                    position: transform.translation,
+                    target,
+                    team,
+                });
+            }
+        }
     }
 }
 
@@ -270,6 +279,7 @@ fn despawn_game(
             With<Explosion>,
             With<LineTrail>,
             With<Ground>,
+            With<SiloReloadUi>,
         )>,
     >,
 ) {
@@ -308,6 +318,7 @@ fn main() {
         .add_plugin(ScoreUiPlugin)
         .add_plugin(DebrisPlugin)
         .add_plugin(GameOverPlugin)
+        .add_plugin(SiloPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))
