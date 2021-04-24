@@ -4,6 +4,7 @@ use crate::{
     debris::{DebrisType, SpawnDebris},
     explosion::{Explosion, SpawnExplosion},
     missile::Missile,
+    powerups::PowerupType,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
     ui::UpdateScoreUi,
@@ -20,7 +21,8 @@ impl Plugin for CollisionPlugin {
                 .with_system(update_collisions.system())
                 .with_system(missile_collisions.system())
                 .with_system(enemy_missile_collisions.system())
-                .with_system(missile_ground_collisions.system()),
+                .with_system(missile_ground_collisions.system())
+                .with_system(powerup_collisions.system()),
         );
     }
 }
@@ -29,9 +31,11 @@ fn update_collisions(
     mut commands: Commands,
     player_explosions: Query<(&Explosion, &PlayerTeam, &CircleCollider, &Transform)>,
     enemy_missiles: Query<(Entity, &Missile, &EnemyTeam, &Transform)>,
+    powerups: Query<(Entity, &PowerupType, &Transform)>,
     mut events: EventWriter<UpdateScoreUi>,
 ) {
     for (_, _, collider, transform) in player_explosions.iter() {
+        // TODO - Maybe merge the two queries into one?
         for (entity, _, _, missile_transform) in enemy_missiles.iter() {
             let d = transform
                 .translation
@@ -39,6 +43,21 @@ fn update_collisions(
             if d < collider.0.powi(2) {
                 commands.entity(entity).despawn();
                 events.send(UpdateScoreUi { value: 10 });
+            }
+        }
+
+        for (p_entity, p_type, p_transform) in powerups.iter() {
+            let d = transform
+                .translation
+                .distance_squared(p_transform.translation);
+            // TODO - Give powerups a proper collider
+            if d < (collider.0 + 16.0).powi(2) {
+                commands.entity(p_entity).despawn();
+
+                match p_type {
+                    // TODO - Don't hardcode powerup score reward
+                    PowerupType::Score => events.send(UpdateScoreUi { value: 100 }),
+                };
             }
         }
     }
@@ -112,6 +131,8 @@ fn enemy_missile_collisions(
                 }
             } else {
                 // Hit a silo
+                // TODO - Also need to despawn the corresponding SiloReloadUi entity
+                //        Maybe just spawn SiloReloadUi as a child of the silo?
                 let half_width = 32.0;
                 let half_height = 16.0;
                 let y_offset = 0.0;
@@ -145,6 +166,40 @@ fn missile_ground_collisions(
                 position: transform.translation,
                 team: *team,
             })
+        }
+    }
+}
+
+fn powerup_collisions(
+    mut commands: Commands,
+    missiles: Query<(Entity, &Missile, &Transform, &Team)>,
+    powerups: Query<(Entity, &PowerupType, &Transform)>,
+    mut events: EventWriter<SpawnExplosion>,
+    mut score_events: EventWriter<UpdateScoreUi>,
+) {
+    for (m_entity, _, m_transform, m_team) in missiles.iter() {
+        for (p_entity, p_type, p_transform) in powerups.iter() {
+            if *m_team == Team::Player {
+                let distance = m_transform
+                    .translation
+                    .distance_squared(p_transform.translation);
+
+                // TODO - Properly get powerup radius instead of hardcoding
+                if distance < 16.0f32.powi(2) {
+                    commands.entity(m_entity).despawn();
+                    commands.entity(p_entity).despawn();
+
+                    events.send(SpawnExplosion {
+                        position: m_transform.translation,
+                        team: Team::Player,
+                    });
+
+                    match p_type {
+                        // TODO - Don't hardcode powerup score reward
+                        PowerupType::Score => score_events.send(UpdateScoreUi { value: 100 }),
+                    };
+                }
+            }
         }
     }
 }
