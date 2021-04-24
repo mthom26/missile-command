@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    consts::{MISSILE_HIT_VALUE, MISSILE_VALUE, SCORE_POWERUP_VALUE},
     debris::{DebrisType, SpawnDebris},
     explosion::{Explosion, SpawnExplosion},
     missile::Missile,
@@ -18,7 +19,7 @@ impl Plugin for CollisionPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_system_set(
             SystemSet::on_update(GameState::Game)
-                .with_system(update_collisions.system())
+                .with_system(explosion_collisions.system())
                 .with_system(missile_collisions.system())
                 .with_system(enemy_missile_collisions.system())
                 .with_system(missile_ground_collisions.system())
@@ -27,64 +28,70 @@ impl Plugin for CollisionPlugin {
     }
 }
 
-fn update_collisions(
+// Player explosions hit Enemy missiles and Powerups
+fn explosion_collisions(
     mut commands: Commands,
     player_explosions: Query<(&Explosion, &PlayerTeam, &CircleCollider, &Transform)>,
     enemy_missiles: Query<(Entity, &Missile, &EnemyTeam, &Transform)>,
-    powerups: Query<(Entity, &PowerupType, &Transform)>,
+    powerups: Query<(Entity, &PowerupType, &Transform, &CircleCollider)>,
     mut events: EventWriter<UpdateScoreUi>,
 ) {
-    for (_, _, collider, transform) in player_explosions.iter() {
+    for (_, _, p_collider, p_transform) in player_explosions.iter() {
         // TODO - Maybe merge the two queries into one?
-        for (entity, _, _, missile_transform) in enemy_missiles.iter() {
-            let d = transform
+        for (e_entity, _, _, e_transform) in enemy_missiles.iter() {
+            let d = p_transform
                 .translation
-                .distance_squared(missile_transform.translation);
-            if d < collider.0.powi(2) {
-                commands.entity(entity).despawn();
-                events.send(UpdateScoreUi { value: 10 });
+                .distance_squared(e_transform.translation);
+            if d < p_collider.0.powi(2) {
+                commands.entity(e_entity).despawn();
+                events.send(UpdateScoreUi {
+                    value: MISSILE_VALUE,
+                });
             }
         }
 
-        for (p_entity, p_type, p_transform) in powerups.iter() {
-            let d = transform
+        for (pow_entity, pow_type, pow_transform, pow_collider) in powerups.iter() {
+            let d = p_transform
                 .translation
-                .distance_squared(p_transform.translation);
+                .distance_squared(pow_transform.translation);
             // TODO - Give powerups a proper collider
-            if d < (collider.0 + 16.0).powi(2) {
-                commands.entity(p_entity).despawn();
+            if d < (p_collider.0 + pow_collider.0).powi(2) {
+                commands.entity(pow_entity).despawn();
 
-                match p_type {
-                    // TODO - Don't hardcode powerup score reward
-                    PowerupType::Score => events.send(UpdateScoreUi { value: 100 }),
+                match pow_type {
+                    PowerupType::Score => events.send(UpdateScoreUi {
+                        value: SCORE_POWERUP_VALUE,
+                    }),
                 };
             }
         }
     }
 }
 
+// Player missiles hit Enemy missiles
 fn missile_collisions(
     mut commands: Commands,
-    player_missiles: Query<(Entity, &Missile, &PlayerTeam, &Transform)>,
-    enemy_missiles: Query<(Entity, &Missile, &EnemyTeam, &Transform)>,
+    player_missiles: Query<(Entity, &Missile, &PlayerTeam, &Transform, &CircleCollider)>,
+    enemy_missiles: Query<(Entity, &Missile, &EnemyTeam, &Transform, &CircleCollider)>,
     mut events: EventWriter<SpawnExplosion>,
     mut score_events: EventWriter<UpdateScoreUi>,
 ) {
-    for (player_entity, _, _, player_transform) in player_missiles.iter() {
-        for (enemy_entity, _, _, enemy_transform) in enemy_missiles.iter() {
-            let d = player_transform
+    for (p_entity, _, _, p_transform, p_collider) in player_missiles.iter() {
+        for (e_entity, _, _, e_transform, e_collider) in enemy_missiles.iter() {
+            let d = p_transform
                 .translation
-                .distance_squared(enemy_transform.translation);
+                .distance_squared(e_transform.translation);
 
-            // TODO - Give missiles a customisable collision radius instead of hardcoding it?
-            if d < 7.0f32.powi(2) {
-                commands.entity(player_entity).despawn();
-                commands.entity(enemy_entity).despawn();
+            if d < (p_collider.0 + e_collider.0).powi(2) {
+                commands.entity(p_entity).despawn();
+                commands.entity(e_entity).despawn();
                 events.send(SpawnExplosion {
-                    position: player_transform.translation,
+                    position: p_transform.translation,
                     team: Team::Player,
                 });
-                score_events.send(UpdateScoreUi { value: 20 });
+                score_events.send(UpdateScoreUi {
+                    value: MISSILE_HIT_VALUE,
+                });
             }
         }
     }
@@ -170,22 +177,22 @@ fn missile_ground_collisions(
     }
 }
 
+// Player missiles hit Powerups
 fn powerup_collisions(
     mut commands: Commands,
     missiles: Query<(Entity, &Missile, &Transform, &Team)>,
-    powerups: Query<(Entity, &PowerupType, &Transform)>,
+    powerups: Query<(Entity, &PowerupType, &Transform, &CircleCollider)>,
     mut events: EventWriter<SpawnExplosion>,
     mut score_events: EventWriter<UpdateScoreUi>,
 ) {
     for (m_entity, _, m_transform, m_team) in missiles.iter() {
-        for (p_entity, p_type, p_transform) in powerups.iter() {
+        for (p_entity, p_type, p_transform, p_collider) in powerups.iter() {
             if *m_team == Team::Player {
                 let distance = m_transform
                     .translation
                     .distance_squared(p_transform.translation);
 
-                // TODO - Properly get powerup radius instead of hardcoding
-                if distance < 16.0f32.powi(2) {
+                if distance < p_collider.0.powi(2) {
                     commands.entity(m_entity).despawn();
                     commands.entity(p_entity).despawn();
 
@@ -195,8 +202,9 @@ fn powerup_collisions(
                     });
 
                     match p_type {
-                        // TODO - Don't hardcode powerup score reward
-                        PowerupType::Score => score_events.send(UpdateScoreUi { value: 100 }),
+                        PowerupType::Score => score_events.send(UpdateScoreUi {
+                            value: SCORE_POWERUP_VALUE,
+                        }),
                     };
                 }
             }

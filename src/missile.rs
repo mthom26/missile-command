@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
 use crate::{
+    collision::CircleCollider,
+    consts::{ENEMY_MISSILE_VELOCITY, MISSILE_RADIUS, PLAYER_MISSILE_VELOCITY},
     explosion::SpawnExplosion,
     line_trail::SpawnLineTrail,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
-    AssetHandles, Velocity, MISSILE_VELOCITY,
+    AssetHandles, Velocity,
 };
 
 pub struct Missile;
@@ -43,7 +45,10 @@ fn spawn_missiles(
         let b = Vec2::new(b.x, b.y);
         let angle = a.angle_between(b);
 
-        let velocity = b.normalize() * MISSILE_VELOCITY;
+        let velocity = match e.team {
+            Team::Player => b.normalize() * PLAYER_MISSILE_VELOCITY,
+            Team::Enemy => b.normalize() * ENEMY_MISSILE_VELOCITY,
+        };
 
         let missile_material = match e.team {
             Team::Player => asset_handles.missile_green.clone(),
@@ -72,6 +77,7 @@ fn spawn_missiles(
                 .insert(PlayerTeam)
                 .insert(Team::Player)
                 .insert(Missile)
+                .insert(CircleCollider(MISSILE_RADIUS))
                 .id()
         } else {
             commands
@@ -89,11 +95,11 @@ fn spawn_missiles(
                 .insert(EnemyTeam)
                 .insert(Team::Enemy)
                 .insert(Missile)
+                .insert(CircleCollider(MISSILE_RADIUS))
                 .id()
         };
 
         // Spawn Line Trail
-        // TODO - Send appropriate color
         line_events.send(SpawnLineTrail {
             position: e.position,
             rotation: angle,

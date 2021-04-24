@@ -2,12 +2,11 @@ use bevy::prelude::*;
 
 use crate::{
     collision::CircleCollider,
+    consts::EXPLOSION_SIZE,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
     AssetHandles,
 };
-
-const BASE_SIZE: f32 = 32.0;
 
 pub struct Explosion;
 
@@ -57,7 +56,7 @@ fn spawn_explosions(
                 })
                 .insert(PlayerTeam)
                 .insert(Size(1.0))
-                .insert(CircleCollider(BASE_SIZE))
+                .insert(CircleCollider(EXPLOSION_SIZE))
                 .insert(Explosion);
         } else {
             commands
@@ -75,7 +74,7 @@ fn spawn_explosions(
                 })
                 .insert(EnemyTeam)
                 .insert(Size(1.0))
-                .insert(CircleCollider(BASE_SIZE))
+                .insert(CircleCollider(EXPLOSION_SIZE))
                 .insert(Explosion);
         }
     }
@@ -96,7 +95,7 @@ fn update_explosions(
         size.0 -= time.delta_seconds();
         transform.scale.x = size.0;
         transform.scale.y = size.0;
-        collider.0 = BASE_SIZE * size.0;
+        collider.0 = EXPLOSION_SIZE * size.0;
 
         // Despawn explosion when it shrinks to zero size
         // TODO - Add easing so the explosion grows quickly then smoothly shrinks?

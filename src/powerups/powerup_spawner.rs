@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::prelude::*;
 
 use super::PowerupType;
-use crate::{AssetHandles, Velocity};
+use crate::{collision::CircleCollider, consts::POWERUP_RADIUS, AssetHandles, Velocity};
 
 pub struct PowerupSpawner {
     pub timer: Timer,
@@ -30,9 +30,8 @@ pub fn run_powerup_spawner(
         let mut rng = thread_rng();
         let y = rng.gen_range(0.0..half_height);
         let x = match rng.gen_bool(0.5) {
-            // TODO - Add powerup width to this so the whole sprite is offscreen
-            true => -half_width,
-            false => half_width,
+            true => -half_width - POWERUP_RADIUS,
+            false => half_width + POWERUP_RADIUS,
         };
 
         let velocity = match x {
@@ -67,6 +66,7 @@ pub fn spawn_powerups(
                 ..Default::default()
             })
             .insert(e.powerup_type)
-            .insert(Velocity(e.velocity));
+            .insert(Velocity(e.velocity))
+            .insert(CircleCollider(POWERUP_RADIUS));
     }
 }

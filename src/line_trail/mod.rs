@@ -84,13 +84,6 @@ fn setup(
         [-0.5 * LINE_WIDTH, 0.0, 0.0],
     ];
     rect.set_attribute(Mesh::ATTRIBUTE_POSITION, vertexes);
-    let colors = vec![
-        [1.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0],
-        [0.0, 0.0, 1.0],
-        [1.0, 1.0, 0.0],
-    ];
-    rect.set_attribute(Mesh::ATTRIBUTE_COLOR, colors);
     let indices = vec![0, 1, 2, 0, 2, 3];
     rect.set_indices(Some(Indices::U32(indices)));
     let uvs = vec![[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [1.0, 1.0]];
@@ -157,7 +150,7 @@ fn update_line_scale(time: Res<Time>, mut query: Query<(&LineTrail, &Velocity, &
 
 fn update_line_velocity(owner_query: Query<Entity>, mut query: Query<(&LineTrail, &mut Velocity)>) {
     for (line_trail, mut velocity) in query.iter_mut() {
-        // If the owner has despawned so stop the line
+        // If the owner has despawned stop the line
         match owner_query.get(line_trail.owner) {
             Ok(_) => {}
             Err(_) => velocity.0 = Vec2::ZERO,

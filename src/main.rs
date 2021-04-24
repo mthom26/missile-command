@@ -2,6 +2,7 @@ use bevy::{prelude::*, render::pipeline::PipelineDescriptor, utils::Duration};
 use rand::prelude::*;
 
 mod collision;
+mod consts;
 mod debris;
 mod enemy_spawner;
 mod explosion;
@@ -14,6 +15,7 @@ mod team;
 mod ui;
 
 use collision::CollisionPlugin;
+use consts::{SILO_MAX_MISSILES, SILO_RELOAD_TIME};
 use debris::{DebrisPlugin, DebrisType};
 use enemy_spawner::EnemySpawnerPlugin;
 use explosion::{Explosion, ExplosionPlugin};
@@ -24,10 +26,6 @@ use silo::{Silo, SiloLocation, SiloPlugin, SiloReloadUi};
 use state::GameState;
 use team::Team;
 use ui::{GameOverPlugin, MainMenuPlugin, ScoreUiPlugin};
-
-const MISSILE_VELOCITY: f32 = 200.0;
-const SILO_RELOAD_TIME: f32 = 3.0;
-const SILO_MAX_MISSILES: u8 = 3;
 
 struct Building;
 
@@ -121,13 +119,45 @@ fn setup(
     commands.spawn_bundle(UiCameraBundle::default());
 }
 
-fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows: Res<Windows>) {
+fn setup_game(
+    mut commands: Commands,
+    asset_handles: Res<AssetHandles>,
+    windows: Res<Windows>,
+    color_mats: Res<Assets<ColorMaterial>>,
+    textures: Res<Assets<Texture>>,
+) {
+    let (window_width, window_half_width, window_half_height) = {
+        let window = windows.get_primary().unwrap();
+        (window.width(), window.width() / 2.0, window.height() / 2.0)
+    };
+    let (ground_y, ground_height) = {
+        // This can fail if the texture hasn't loaded but it shouldn't happen
+        // as long as the app isn't run immediately with GameState set.
+        let mat = color_mats.get(asset_handles.ground.clone()).unwrap();
+        let tex_handle = mat.texture.clone().unwrap();
+        let tex_height = textures.get(tex_handle).unwrap().size.height as f32;
+        (-window_half_height + tex_height / 2.0, tex_height)
+    };
+    let silo_height = {
+        let mat = color_mats.get(asset_handles.silo.clone()).unwrap();
+        let tex_handle = mat.texture.clone().unwrap();
+        let tex_height = textures.get(tex_handle).unwrap().size.height as f32;
+        tex_height
+    };
+    let building_height = {
+        // All buildings are currently the same height...
+        let mat = color_mats.get(asset_handles.building_01.clone()).unwrap();
+        let tex_handle = mat.texture.clone().unwrap();
+        let tex_height = textures.get(tex_handle).unwrap().size.height as f32;
+        tex_height
+    };
+
     // Ground
     commands
         .spawn_bundle(SpriteBundle {
             material: asset_handles.ground.clone(),
             transform: Transform {
-                translation: Vec3::new(0.0, -328.0, 0.0),
+                translation: Vec3::new(0.0, ground_y, 0.0),
                 scale: Vec3::new(2.0, 1.0, 1.0),
                 ..Default::default()
             },
@@ -136,26 +166,14 @@ fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows:
         .insert(Ground);
 
     // Silos and Buildings
-    let (width, half_width) = if let Some(window) = windows.get_primary() {
-        (window.width(), window.width() / 2.0)
-    } else {
-        eprintln!("Could not find primary window!");
-        std::process::exit(1);
-    };
-    let step_size = width / 9.0; // 3 silos + 6 buildings
+    let step_size = window_width / 9.0; // 3 silos + 6 buildings
     let half_step = step_size / 2.0;
 
     for i in 0..9 {
         match i {
             0 | 4 | 8 => {
-                let x = (step_size * i as f32) + half_step - half_width;
-                // Can't get the height as Texture it is still loading so
-                // just hard code it for now...
-                // let y = textures.get(silo_tex.clone()).unwrap().size.height as f32 - 328.0 + 32.0;
-
-                // TODO - Lots of hardcoded values here that should be put into
-                //        proper variables for clarity
-                let y = 16.0 - 328.0 + 32.0;
+                let x = (step_size * i as f32) + half_step - window_half_width;
+                let y = silo_height / 2.0 + ground_height - window_half_height;
 
                 let silo_location = match i {
                     0 => SiloLocation::Left,
@@ -209,8 +227,8 @@ fn setup_game(mut commands: Commands, asset_handles: Res<AssetHandles>, windows:
                     _ => panic!("Error choosing building material."),
                 };
 
-                let x = (step_size * i as f32) + half_step - half_width;
-                let y = 32.0 - 328.0 + 32.0;
+                let x = (step_size * i as f32) + half_step - window_half_width;
+                let y = building_height / 2.0 + ground_height - window_half_height;
 
                 commands
                     .spawn_bundle(SpriteBundle {
@@ -314,7 +332,7 @@ fn main() {
             ..Default::default()
         })
         .insert_resource(ClearColor(Color::rgb(0.11, 0.11, 0.14)))
-        .add_state(GameState::Game)
+        .add_state(GameState::MainMenu)
         .add_plugins(DefaultPlugins)
         .add_plugin(MainMenuPlugin)
         .add_plugin(MissilePlugin)
