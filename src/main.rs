@@ -7,6 +7,7 @@ mod enemy_spawner;
 mod explosion;
 mod line_trail;
 mod missile;
+mod powerups;
 mod silo;
 mod state;
 mod team;
@@ -18,6 +19,7 @@ use enemy_spawner::EnemySpawnerPlugin;
 use explosion::{Explosion, ExplosionPlugin};
 use line_trail::{LineMaterial, LineTrail, LineTrailPlugin};
 use missile::{Missile, MissilePlugin, SpawnMissile};
+use powerups::PowerupsPlugin;
 use silo::{Silo, SiloLocation, SiloPlugin, SiloReloadUi};
 use state::GameState;
 use team::Team;
@@ -61,6 +63,9 @@ pub struct AssetHandles {
     pub silo_reload_loading: Handle<ColorMaterial>,
     pub silo_reload_ready: Handle<ColorMaterial>,
 
+    // Powerups
+    pub score_powerup: Handle<ColorMaterial>,
+
     // Line Trail
     pub line_trail: Handle<Mesh>,
     pub line_trail_pipeline: Handle<PipelineDescriptor>,
@@ -85,6 +90,7 @@ fn setup(
     let explosion_green_tex: Handle<Texture> = asset_server.load("explosion_green.png");
     let debris_01: Handle<Texture> = asset_server.load("debris_01.png");
     let silo_debris_01: Handle<Texture> = asset_server.load("silo_debris_01.png");
+    let score_powerup_tex = asset_server.load("score_powerup.png");
 
     asset_handles.font = asset_server.load("BlocTekRegular-gxEZ4.ttf");
     asset_handles.button_normal = materials.add(Color::rgb(0.15, 0.15, 0.15).into());
@@ -109,6 +115,7 @@ fn setup(
         color: Color::rgb(0.3, 0.9, 0.3),
         texture: None,
     });
+    asset_handles.score_powerup = materials.add(score_powerup_tex.into());
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
@@ -319,6 +326,7 @@ fn main() {
         .add_plugin(DebrisPlugin)
         .add_plugin(GameOverPlugin)
         .add_plugin(SiloPlugin)
+        .add_plugin(PowerupsPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))
