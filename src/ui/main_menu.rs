@@ -4,6 +4,7 @@ use crate::{state::GameState, AssetHandles};
 
 enum MainMenuButton {
     Play,
+    Options,
     Quit,
 }
 
@@ -73,65 +74,26 @@ fn setup_menu(
                 })
                 .with_children(|parent| {
                     // Play button
-                    parent
-                        .spawn_bundle(ButtonBundle {
-                            style: Style {
-                                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
-                                margin: Rect::all(Val::Px(5.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..Default::default()
-                            },
-                            material: asset_handles.button_normal.clone(),
-                            ..Default::default()
-                        })
-                        .insert(MainMenuButton::Play)
-                        .with_children(|parent| {
-                            parent.spawn_bundle(TextBundle {
-                                text: Text {
-                                    sections: vec![TextSection {
-                                        value: "PLAY".to_string(),
-                                        style: TextStyle {
-                                            font: asset_handles.font.clone(),
-                                            font_size: 20.0,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
-                                        },
-                                    }],
-                                    ..Default::default()
-                                },
-                                ..Default::default()
-                            });
-                        });
+                    spawn_button(
+                        parent,
+                        &asset_handles,
+                        "PLAY".to_string(),
+                        MainMenuButton::Play,
+                    );
+                    // Options button
+                    spawn_button(
+                        parent,
+                        &asset_handles,
+                        "OPTIONS".to_string(),
+                        MainMenuButton::Options,
+                    );
                     // Quit button
-                    parent
-                        .spawn_bundle(ButtonBundle {
-                            style: Style {
-                                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
-                                margin: Rect::all(Val::Px(5.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..Default::default()
-                            },
-                            material: asset_handles.button_normal.clone(),
-                            ..Default::default()
-                        })
-                        .insert(MainMenuButton::Quit)
-                        .with_children(|parent| {
-                            parent.spawn_bundle(TextBundle {
-                                text: Text {
-                                    sections: vec![TextSection {
-                                        value: "QUIT".to_string(),
-                                        style: TextStyle {
-                                            font: asset_handles.font.clone(),
-                                            font_size: 20.0,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
-                                        },
-                                    }],
-                                    ..Default::default()
-                                },
-                                ..Default::default()
-                            });
-                        });
+                    spawn_button(
+                        parent,
+                        &asset_handles,
+                        "QUIT".to_string(),
+                        MainMenuButton::Quit,
+                    );
                 });
         });
 }
@@ -151,6 +113,7 @@ fn update_menu(
                 *material = asset_handles.button_click.clone();
                 match button {
                     MainMenuButton::Play => state.set(GameState::Game).unwrap(),
+                    MainMenuButton::Options => state.set(GameState::OptionsMenu).unwrap(),
                     MainMenuButton::Quit => events.send(AppExit),
                 }
             }
@@ -164,4 +127,42 @@ fn despawn(mut commands: Commands, query: Query<(Entity, &MainMenuUi)>) {
     for (entity, _) in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
+}
+
+// Spawn Main Menu button
+fn spawn_button(
+    parent: &mut ChildBuilder,
+    asset_handles: &AssetHandles,
+    text_value: String,
+    button_type: MainMenuButton,
+) {
+    parent
+        .spawn_bundle(ButtonBundle {
+            style: Style {
+                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
+                margin: Rect::all(Val::Px(5.0)),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..Default::default()
+            },
+            material: asset_handles.button_normal.clone(),
+            ..Default::default()
+        })
+        .insert(button_type)
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text {
+                    sections: vec![TextSection {
+                        value: text_value,
+                        style: TextStyle {
+                            font: asset_handles.font.clone(),
+                            font_size: 20.0,
+                            color: Color::rgb(0.9, 0.9, 0.9),
+                        },
+                    }],
+                    ..Default::default()
+                },
+                ..Default::default()
+            });
+        });
 }

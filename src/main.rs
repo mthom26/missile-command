@@ -1,6 +1,7 @@
 use bevy::{prelude::*, render::pipeline::PipelineDescriptor, utils::Duration};
 use rand::prelude::*;
 
+mod actions;
 mod collision;
 mod consts;
 mod debris;
@@ -14,6 +15,7 @@ mod state;
 mod team;
 mod ui;
 
+use actions::{ActionsPlugin, Actions};
 use collision::CollisionPlugin;
 use consts::{SILO_MAX_MISSILES, SILO_RELOAD_TIME};
 use debris::{DebrisPlugin, DebrisType};
@@ -25,7 +27,7 @@ use powerups::PowerupsPlugin;
 use silo::{Silo, SiloLocation, SiloPlugin, SiloReloadUi};
 use state::GameState;
 use team::Team;
-use ui::{GameOverPlugin, MainMenuPlugin, ScoreUiPlugin};
+use ui::{GameOverPlugin, MainMenuPlugin, OptionsMenuPlugin, ScoreUiPlugin};
 
 struct Building;
 
@@ -45,6 +47,10 @@ pub struct AssetHandles {
     pub button_hover: Handle<ColorMaterial>,
     pub button_click: Handle<ColorMaterial>,
     pub font: Handle<Font>,
+    pub simple_font: Handle<Font>,
+
+    // Rebind Ui
+    pub rebind_widget: Handle<ColorMaterial>,
 
     // Game
     pub missile_red: Handle<ColorMaterial>,
@@ -91,6 +97,7 @@ fn setup(
     let score_powerup_tex = asset_server.load("score_powerup.png");
 
     asset_handles.font = asset_server.load("BlocTekRegular-gxEZ4.ttf");
+    asset_handles.simple_font = asset_server.load("MontserratBold-DOWZd.ttf");
     asset_handles.button_normal = materials.add(Color::rgb(0.15, 0.15, 0.15).into());
     asset_handles.button_hover = materials.add(Color::rgb(0.35, 0.35, 0.35).into());
     asset_handles.button_click = materials.add(Color::rgb(0.35, 0.85, 0.35).into());
@@ -114,6 +121,7 @@ fn setup(
         texture: None,
     });
     asset_handles.score_powerup = materials.add(score_powerup_tex.into());
+    asset_handles.rebind_widget = materials.add(Color::rgb(0.6, 0.2, 0.1).into());
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
@@ -246,7 +254,8 @@ fn setup_game(
 }
 
 fn shoot(
-    keys: Res<Input<KeyCode>>,
+    // keys: Res<Input<KeyCode>>,
+    actions: Res<Actions>,
     mouse_pos: Res<MousePosition>,
     mut query: Query<(&mut Silo, &mut Timer, &Transform)>,
     mut events: EventWriter<SpawnMissile>,
@@ -256,9 +265,9 @@ fn shoot(
 
     for (mut silo, mut timer, transform) in query.iter_mut() {
         if silo.missiles > 0 {
-            if silo.location == SiloLocation::Left && keys.just_pressed(KeyCode::A)
-                || silo.location == SiloLocation::Middle && keys.just_pressed(KeyCode::S)
-                || silo.location == SiloLocation::Right && keys.just_pressed(KeyCode::D)
+            if silo.location == SiloLocation::Left && actions.get_just_pressed("Fire Left Silo")
+                || silo.location == SiloLocation::Middle && actions.get_just_pressed("Fire Middle Silo")
+                || silo.location == SiloLocation::Right && actions.get_just_pressed("Fire Right Silo")
             {
                 silo.missiles -= 1;
                 if timer.finished() {
@@ -345,6 +354,8 @@ fn main() {
         .add_plugin(GameOverPlugin)
         .add_plugin(SiloPlugin)
         .add_plugin(PowerupsPlugin)
+        .add_plugin(OptionsMenuPlugin)
+        .add_plugin(ActionsPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))

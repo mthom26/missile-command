@@ -1,0 +1,7 @@
+(
+    keyboard: {
+        Q: "Fire Left Silo",
+        W: "Fire Middle Silo",
+        E: "Fire Right Silo",
+    },
+)
