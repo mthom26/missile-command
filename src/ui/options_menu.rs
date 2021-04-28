@@ -1,6 +1,6 @@
 use bevy::{input::keyboard::KeyboardInput, prelude::*};
 
-use crate::{actions::ActionsMap, AssetHandles, GameState};
+use crate::{actions::ActionsMap, audio::PlayAudio, AssetHandles, GameState};
 
 struct OptionsMenuUi;
 
@@ -133,17 +133,26 @@ fn update_menu(
         Changed<Interaction>,
     >,
     mut state: ResMut<State<GameState>>,
+    mut audio_events: EventWriter<PlayAudio>,
 ) {
     // MainMenu button
     for (interaction, mut material, button) in query.iter_mut() {
         match interaction {
             Interaction::Clicked => {
                 *material = asset_handles.button_click.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.button_click_audio.clone(),
+                });
                 match button {
                     OptionsMenuButton::MainMenu => state.set(GameState::MainMenu).unwrap(),
                 }
             }
-            Interaction::Hovered => *material = asset_handles.button_hover.clone(),
+            Interaction::Hovered => {
+                *material = asset_handles.button_hover.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.button_hover_audio.clone(),
+                })
+            }
             Interaction::None => *material = asset_handles.button_normal.clone(),
         }
     }
@@ -162,12 +171,17 @@ fn update_rebind_items(
         ),
         Changed<Interaction>,
     >,
+    mut audio_events: EventWriter<PlayAudio>,
 ) {
     // Rebind buttons
     for (entity, interaction, button, mut material) in rebind_query.iter_mut() {
         match interaction {
             Interaction::Clicked => {
                 *material = asset_handles.button_click.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.rebind_widget_open_audio.clone(),
+                });
+
                 spawn_rebind_widget(
                     &mut commands,
                     &button.action,
@@ -180,6 +194,9 @@ fn update_rebind_items(
             }
             Interaction::Hovered => {
                 *material = asset_handles.button_hover.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.button_hover_audio.clone(),
+                });
             }
             Interaction::None => {
                 *material = asset_handles.button_normal.clone();
@@ -287,8 +304,10 @@ fn spawn_rebind_widget(
 }
 
 fn run_rebind_widget(
+    asset_handles: Res<AssetHandles>,
     mut commands: Commands,
     mut events: EventWriter<UpdateRebindButtonText>,
+    mut audio_events: EventWriter<PlayAudio>,
     mut keyboard_events: EventReader<KeyboardInput>,
     mut action_map: ResMut<ActionsMap>,
     query: Query<(Entity, &RebindWidget)>,
@@ -306,6 +325,9 @@ fn run_rebind_widget(
             events.send(UpdateRebindButtonText {
                 entity: rebind_widget.button_entity,
                 new_keycode: e.key_code.unwrap(),
+            });
+            audio_events.send(PlayAudio {
+                handle: asset_handles.rebind_widget_close_audio.clone(),
             });
 
             commands.entity(entity).despawn_recursive();
@@ -357,11 +379,7 @@ fn spawn_rebind_item(
         });
 }
 
-fn spawn_action_text(
-    parent: &mut ChildBuilder,
-    asset_handles: &AssetHandles,
-    action: &str,
-) {
+fn spawn_action_text(parent: &mut ChildBuilder, asset_handles: &AssetHandles, action: &str) {
     parent
         .spawn_bundle(NodeBundle {
             style: Style {

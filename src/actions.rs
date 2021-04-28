@@ -16,13 +16,34 @@ pub struct ActionsMap {
 }
 
 impl ActionsMap {
-    pub fn update_action(&mut self, action: &str, previous_keycode: KeyCode, new_keycode: KeyCode) {
+    pub fn update_action(
+        &mut self,
+        new_action: &str,
+        previous_keycode: KeyCode,
+        new_keycode: KeyCode,
+    ) {
         if self.keyboard.contains_key(&previous_keycode) {
             // TODO - Check if the new keycode is already assigned to a different action
             //        Will want to display error message in rebind widget somehow...
             self.keyboard.remove(&previous_keycode);
         }
-        self.keyboard.insert(new_keycode, action.to_string());
+
+        // Remove previous action, this assumes that each action will have no
+        // more than one binding.
+        let mut to_remove = None;
+        for (keycode, action) in self.keyboard.iter_mut() {
+            if action == new_action {
+                to_remove = Some(*keycode);
+            }
+        }
+        match to_remove {
+            Some(keycode) => {
+                self.keyboard.remove(&keycode).unwrap();
+            }
+            None => {}
+        };
+
+        self.keyboard.insert(new_keycode, new_action.to_string());
 
         self.write_config_to_file();
     }

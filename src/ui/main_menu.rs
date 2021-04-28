@@ -1,6 +1,6 @@
 use bevy::{app::AppExit, prelude::*};
 
-use crate::{state::GameState, AssetHandles};
+use crate::{audio::PlayAudio, state::GameState, AssetHandles};
 
 enum MainMenuButton {
     Play,
@@ -106,18 +106,27 @@ fn update_menu(
     >,
     mut state: ResMut<State<GameState>>,
     mut events: EventWriter<AppExit>,
+    mut audio_events: EventWriter<PlayAudio>,
 ) {
     for (interaction, mut material, button) in query.iter_mut() {
         match interaction {
             Interaction::Clicked => {
                 *material = asset_handles.button_click.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.button_click_audio.clone(),
+                });
                 match button {
                     MainMenuButton::Play => state.set(GameState::Game).unwrap(),
                     MainMenuButton::Options => state.set(GameState::OptionsMenu).unwrap(),
                     MainMenuButton::Quit => events.send(AppExit),
                 }
             }
-            Interaction::Hovered => *material = asset_handles.button_hover.clone(),
+            Interaction::Hovered => {
+                *material = asset_handles.button_hover.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.button_hover_audio.clone(),
+                });
+            }
             Interaction::None => *material = asset_handles.button_normal.clone(),
         }
     }

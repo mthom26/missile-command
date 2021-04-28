@@ -1,7 +1,9 @@
 use bevy::{prelude::*, render::pipeline::PipelineDescriptor, utils::Duration};
+use bevy_kira_audio::{AudioPlugin as KiraAudioPlugin, AudioSource};
 use rand::prelude::*;
 
 mod actions;
+mod audio;
 mod collision;
 mod consts;
 mod debris;
@@ -16,6 +18,7 @@ mod team;
 mod ui;
 
 use actions::{Actions, ActionsPlugin};
+use audio::AudioPlugin;
 use collision::CollisionPlugin;
 use consts::{SILO_MAX_MISSILES, SILO_RELOAD_TIME};
 use debris::{DebrisPlugin, DebrisType};
@@ -76,6 +79,12 @@ pub struct AssetHandles {
     pub player_line_trail_material: Handle<LineMaterial>,
     pub enemy_line_trail_material: Handle<LineMaterial>,
 
+    // Audio
+    pub button_hover_audio: Handle<AudioSource>,
+    pub button_click_audio: Handle<AudioSource>,
+    pub rebind_widget_open_audio: Handle<AudioSource>,
+    pub rebind_widget_close_audio: Handle<AudioSource>,
+
     // Miscellaneous
     pub none: Handle<ColorMaterial>,
 }
@@ -126,6 +135,10 @@ fn setup(
     asset_handles.score_powerup = materials.add(score_powerup_tex.into());
     asset_handles.rebind_widget = materials.add(Color::rgba(0.0, 0.0, 0.0, 0.9).into());
     asset_handles.none = materials.add(Color::NONE.into());
+    asset_handles.button_hover_audio = asset_server.load("audio/Cursor Rollover 1.wav");
+    asset_handles.button_click_audio = asset_server.load("audio/Warm Digital Accept Button HP.wav");
+    asset_handles.rebind_widget_open_audio = asset_server.load("audio/Window Open 2.wav");
+    asset_handles.rebind_widget_close_audio = asset_server.load("audio/Button Sound 8.wav");
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
@@ -360,6 +373,8 @@ fn main() {
         .add_plugin(PowerupsPlugin)
         .add_plugin(OptionsMenuPlugin)
         .add_plugin(ActionsPlugin)
+        .add_plugin(KiraAudioPlugin)
+        .add_plugin(AudioPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))
