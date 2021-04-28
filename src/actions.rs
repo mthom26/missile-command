@@ -18,6 +18,8 @@ pub struct ActionsMap {
 impl ActionsMap {
     pub fn update_action(&mut self, action: &str, previous_keycode: KeyCode, new_keycode: KeyCode) {
         if self.keyboard.contains_key(&previous_keycode) {
+            // TODO - Check if the new keycode is already assigned to a different action
+            //        Will want to display error message in rebind widget somehow...
             self.keyboard.remove(&previous_keycode);
         }
         self.keyboard.insert(new_keycode, action.to_string());
@@ -65,21 +67,21 @@ impl Actions {
         self.just_released.clear();
     }
 
-    pub fn get_pressed(&self, action: &str) -> bool {
+    pub fn pressed(&self, action: &str) -> bool {
         match self.pressed.get(action) {
             Some(_) => true,
             None => false,
         }
     }
 
-    pub fn get_just_pressed(&self, action: &str) -> bool {
+    pub fn just_pressed(&self, action: &str) -> bool {
         match self.just_pressed.get(action) {
             Some(_) => true,
             None => false,
         }
     }
 
-    pub fn get_just_released(&self, action: &str) -> bool {
+    pub fn just_released(&self, action: &str) -> bool {
         match self.just_released.get(action) {
             Some(_) => true,
             None => false,

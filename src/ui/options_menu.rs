@@ -68,7 +68,7 @@ fn setup_menu(
                 align_items: AlignItems::Center,
                 ..Default::default()
             },
-            material: materials.add(Color::NONE.into()),
+            material: asset_handles.none.clone(),
             ..Default::default()
         })
         .insert(OptionsMenuUi)
@@ -112,7 +112,7 @@ fn setup_menu(
                         .collect::<Vec<(String, KeyCode)>>();
 
                     for (action, keycode) in actions.iter() {
-                        spawn_rebind_item(parent, &asset_handles, action, keycode, &mut materials);
+                        spawn_rebind_item(parent, &asset_handles, action, keycode);
                     }
                 });
 
@@ -127,7 +127,6 @@ fn setup_menu(
 }
 
 fn update_menu(
-    mut commands: Commands,
     asset_handles: Res<AssetHandles>,
     mut query: Query<
         (&Interaction, &mut Handle<ColorMaterial>, &OptionsMenuButton),
@@ -153,6 +152,7 @@ fn update_menu(
 fn update_rebind_items(
     mut commands: Commands,
     asset_handles: Res<AssetHandles>,
+    parent_query: Query<Entity, With<OptionsMenuUi>>,
     mut rebind_query: Query<
         (
             Entity,
@@ -171,6 +171,8 @@ fn update_rebind_items(
                 spawn_rebind_widget(
                     &mut commands,
                     &button.action,
+                    // There should only ever be one `OptionsMenuUi`
+                    parent_query.single().unwrap(),
                     entity,
                     &asset_handles,
                     button.keycode,
@@ -186,8 +188,8 @@ fn update_rebind_items(
     }
 }
 
-fn despawn(mut commands: Commands, query: Query<(Entity, &OptionsMenuUi)>) {
-    for (entity, _) in query.iter() {
+fn despawn(mut commands: Commands, query: Query<Entity, With<OptionsMenuUi>>) {
+    for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
@@ -232,43 +234,56 @@ fn spawn_button(
 fn spawn_rebind_widget(
     commands: &mut Commands,
     action: &str,
+    parent_entity: Entity,
     button_entity: Entity,
     asset_handles: &AssetHandles,
     previous_keycode: KeyCode,
 ) {
-    commands
-        .spawn_bundle(NodeBundle {
-            style: Style {
-                size: Size::new(Val::Px(300.0), Val::Px(100.0)),
+    // Currently z order of Ui elements can't be set directly so need to spawn
+    // the Rebind widget as the last child of OptionsMenu to ensure it has the
+    // highest z value.
+    commands.entity(parent_entity).with_children(|parent| {
+        parent
+            .spawn_bundle(NodeBundle {
+                style: Style {
+                    position_type: PositionType::Absolute,
+                    justify_content: JustifyContent::Center,
+                    align_items: AlignItems::Center,
+                    size: Size::new(Val::Px(600.0), Val::Px(300.0)),
+                    ..Default::default()
+                },
+                material: asset_handles.rebind_widget.clone(),
                 ..Default::default()
-            },
-            material: asset_handles.rebind_widget.clone(),
-            ..Default::default()
-        })
-        .insert(RebindWidget {
-            action: action.to_string(),
-            button_entity,
-            previous_keycode,
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text {
-                    sections: vec![TextSection {
-                        value: format!("Rebind {}", action),
-                        style: TextStyle {
-                            font: asset_handles.simple_font.clone(),
-                            font_size: 24.0,
-                            ..Default::default()
-                        },
-                    }],
-                    alignment: TextAlignment {
-                        horizontal: HorizontalAlign::Center,
+            })
+            .insert(RebindWidget {
+                action: action.to_string(),
+                button_entity,
+                previous_keycode,
+            })
+            .with_children(|parent| {
+                parent.spawn_bundle(TextBundle {
+                    style: Style {
+                        size: Size::new(Val::Auto, Val::Auto),
                         ..Default::default()
                     },
-                },
-                ..Default::default()
+                    text: Text {
+                        sections: vec![TextSection {
+                            value: format!("Rebind: {}", action),
+                            style: TextStyle {
+                                font: asset_handles.simple_font.clone(),
+                                font_size: 24.0,
+                                ..Default::default()
+                            },
+                        }],
+                        alignment: TextAlignment {
+                            horizontal: HorizontalAlign::Center,
+                            ..Default::default()
+                        },
+                    },
+                    ..Default::default()
+                });
             });
-        });
+    });
 }
 
 fn run_rebind_widget(
@@ -316,7 +331,6 @@ fn spawn_rebind_item(
     asset_handles: &AssetHandles,
     action: &str,
     keycode: &KeyCode,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     parent
         .spawn_bundle(NodeBundle {
@@ -332,14 +346,14 @@ fn spawn_rebind_item(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.4, 0.1, 0.1, 1.0).into()),
+            material: asset_handles.none.clone(),
             ..Default::default()
         })
         .with_children(|parent| {
             // Action text
-            spawn_action_text(parent, asset_handles, action, materials);
+            spawn_action_text(parent, asset_handles, action);
             // Rebind Button
-            spawn_rebind_button(parent, asset_handles, action, keycode, materials);
+            spawn_rebind_button(parent, asset_handles, action, keycode);
         });
 }
 
@@ -347,7 +361,6 @@ fn spawn_action_text(
     parent: &mut ChildBuilder,
     asset_handles: &AssetHandles,
     action: &str,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     parent
         .spawn_bundle(NodeBundle {
@@ -363,7 +376,7 @@ fn spawn_action_text(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.1, 0.1, 0.8, 1.0).into()),
+            material: asset_handles.none.clone(),
             ..Default::default()
         })
         .with_children(|parent| {
@@ -389,7 +402,6 @@ fn spawn_rebind_button(
     asset_handles: &AssetHandles,
     action: &str,
     keycode: &KeyCode,
-    materials: &mut ResMut<Assets<ColorMaterial>>,
 ) {
     parent
         .spawn_bundle(ButtonBundle {
@@ -405,7 +417,7 @@ fn spawn_rebind_button(
                 },
                 ..Default::default()
             },
-            material: materials.add(Color::rgba(0.8, 0.1, 0.8, 1.0).into()),
+            material: asset_handles.button_normal.clone(),
             ..Default::default()
         })
         .insert(RebindButton {

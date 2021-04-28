@@ -15,7 +15,7 @@ mod state;
 mod team;
 mod ui;
 
-use actions::{ActionsPlugin, Actions};
+use actions::{Actions, ActionsPlugin};
 use collision::CollisionPlugin;
 use consts::{SILO_MAX_MISSILES, SILO_RELOAD_TIME};
 use debris::{DebrisPlugin, DebrisType};
@@ -75,6 +75,9 @@ pub struct AssetHandles {
     pub line_trail_pipeline: Handle<PipelineDescriptor>,
     pub player_line_trail_material: Handle<LineMaterial>,
     pub enemy_line_trail_material: Handle<LineMaterial>,
+
+    // Miscellaneous
+    pub none: Handle<ColorMaterial>,
 }
 
 fn setup(
@@ -121,7 +124,8 @@ fn setup(
         texture: None,
     });
     asset_handles.score_powerup = materials.add(score_powerup_tex.into());
-    asset_handles.rebind_widget = materials.add(Color::rgb(0.6, 0.2, 0.1).into());
+    asset_handles.rebind_widget = materials.add(Color::rgba(0.0, 0.0, 0.0, 0.9).into());
+    asset_handles.none = materials.add(Color::NONE.into());
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());
@@ -265,9 +269,9 @@ fn shoot(
 
     for (mut silo, mut timer, transform) in query.iter_mut() {
         if silo.missiles > 0 {
-            if silo.location == SiloLocation::Left && actions.get_just_pressed("Fire Left Silo")
-                || silo.location == SiloLocation::Middle && actions.get_just_pressed("Fire Middle Silo")
-                || silo.location == SiloLocation::Right && actions.get_just_pressed("Fire Right Silo")
+            if silo.location == SiloLocation::Left && actions.just_pressed("Fire Left Silo")
+                || silo.location == SiloLocation::Middle && actions.just_pressed("Fire Middle Silo")
+                || silo.location == SiloLocation::Right && actions.just_pressed("Fire Right Silo")
             {
                 silo.missiles -= 1;
                 if timer.finished() {
