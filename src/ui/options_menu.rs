@@ -2,11 +2,9 @@ use bevy::{input::keyboard::KeyboardInput, prelude::*};
 
 use crate::{actions::ActionsMap, audio::PlayAudio, AssetHandles, GameState};
 
-struct OptionsMenuUi;
+use super::{spawn_button, ButtonType};
 
-enum OptionsMenuButton {
-    MainMenu,
-}
+struct OptionsMenuUi;
 
 // Event to update button text after RebindWidget runs
 struct UpdateRebindButtonText {
@@ -121,17 +119,14 @@ fn setup_menu(
                 parent,
                 &asset_handles,
                 "MAIN MENU".to_string(),
-                OptionsMenuButton::MainMenu,
+                ButtonType::SetMainMenu,
             );
         });
 }
 
 fn update_menu(
     asset_handles: Res<AssetHandles>,
-    mut query: Query<
-        (&Interaction, &mut Handle<ColorMaterial>, &OptionsMenuButton),
-        Changed<Interaction>,
-    >,
+    mut query: Query<(&Interaction, &mut Handle<ColorMaterial>, &ButtonType), Changed<Interaction>>,
     mut state: ResMut<State<GameState>>,
     mut audio_events: EventWriter<PlayAudio>,
 ) {
@@ -144,7 +139,8 @@ fn update_menu(
                     handle: asset_handles.button_click_audio.clone(),
                 });
                 match button {
-                    OptionsMenuButton::MainMenu => state.set(GameState::MainMenu).unwrap(),
+                    ButtonType::SetMainMenu => state.set(GameState::MainMenu).unwrap(),
+                    _ => eprintln!("Button should not exist here."),
                 }
             }
             Interaction::Hovered => {
@@ -209,43 +205,6 @@ fn despawn(mut commands: Commands, query: Query<Entity, With<OptionsMenuUi>>) {
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
-}
-
-fn spawn_button(
-    parent: &mut ChildBuilder,
-    asset_handles: &AssetHandles,
-    text_value: String,
-    button_type: OptionsMenuButton,
-) {
-    parent
-        .spawn_bundle(ButtonBundle {
-            style: Style {
-                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
-                margin: Rect::all(Val::Px(5.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..Default::default()
-            },
-            material: asset_handles.button_normal.clone(),
-            ..Default::default()
-        })
-        .insert(button_type)
-        .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text {
-                    sections: vec![TextSection {
-                        value: text_value,
-                        style: TextStyle {
-                            font: asset_handles.font.clone(),
-                            font_size: 20.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                        },
-                    }],
-                    ..Default::default()
-                },
-                ..Default::default()
-            });
-        });
 }
 
 fn spawn_rebind_widget(

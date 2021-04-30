@@ -2,10 +2,7 @@ use bevy::{app::AppExit, prelude::*};
 
 use crate::{AssetHandles, GameState};
 
-enum GameOverButton {
-    MainMenu,
-    Quit,
-}
+use super::{spawn_button, ButtonType};
 
 struct GameOverUi;
 
@@ -90,75 +87,21 @@ fn setup_game_over(
                 })
                 .with_children(|parent| {
                     // Main Menu button
-                    parent
-                        .spawn_bundle(ButtonBundle {
-                            style: Style {
-                                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
-                                margin: Rect::all(Val::Px(5.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..Default::default()
-                            },
-                            material: asset_handles.button_normal.clone(),
-                            ..Default::default()
-                        })
-                        .insert(GameOverButton::MainMenu)
-                        .with_children(|parent| {
-                            parent.spawn_bundle(TextBundle {
-                                text: Text {
-                                    sections: vec![TextSection {
-                                        value: "MAIN MENU".to_string(),
-                                        style: TextStyle {
-                                            font: asset_handles.font.clone(),
-                                            font_size: 20.0,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
-                                        },
-                                    }],
-                                    ..Default::default()
-                                },
-                                ..Default::default()
-                            });
-                        });
+                    spawn_button(
+                        parent,
+                        &asset_handles,
+                        "MAIN MENU".to_string(),
+                        ButtonType::SetMainMenu,
+                    );
                     // Quit button
-                    parent
-                        .spawn_bundle(ButtonBundle {
-                            style: Style {
-                                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
-                                margin: Rect::all(Val::Px(5.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..Default::default()
-                            },
-                            material: asset_handles.button_normal.clone(),
-                            ..Default::default()
-                        })
-                        .insert(GameOverButton::Quit)
-                        .with_children(|parent| {
-                            parent.spawn_bundle(TextBundle {
-                                text: Text {
-                                    sections: vec![TextSection {
-                                        value: "QUIT".to_string(),
-                                        style: TextStyle {
-                                            font: asset_handles.font.clone(),
-                                            font_size: 20.0,
-                                            color: Color::rgb(0.9, 0.9, 0.9),
-                                        },
-                                    }],
-                                    ..Default::default()
-                                },
-                                ..Default::default()
-                            });
-                        });
+                    spawn_button(parent, &asset_handles, "QUIT".to_string(), ButtonType::Quit);
                 });
         });
 }
 
 fn update_game_over(
     asset_handles: Res<AssetHandles>,
-    mut query: Query<
-        (&Interaction, &mut Handle<ColorMaterial>, &GameOverButton),
-        Changed<Interaction>,
-    >,
+    mut query: Query<(&Interaction, &mut Handle<ColorMaterial>, &ButtonType), Changed<Interaction>>,
     mut state: ResMut<State<GameState>>,
     mut events: EventWriter<AppExit>,
 ) {
@@ -167,8 +110,9 @@ fn update_game_over(
             Interaction::Clicked => {
                 *material = asset_handles.button_click.clone();
                 match button {
-                    GameOverButton::MainMenu => state.set(GameState::MainMenu).unwrap(),
-                    GameOverButton::Quit => events.send(AppExit),
+                    ButtonType::SetMainMenu => state.set(GameState::MainMenu).unwrap(),
+                    ButtonType::Quit => events.send(AppExit),
+                    _ => eprintln!("Button should not exist here."),
                 }
             }
             Interaction::Hovered => *material = asset_handles.button_hover.clone(),

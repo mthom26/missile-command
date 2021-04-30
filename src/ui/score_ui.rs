@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{state::GameState, AssetHandles};
 
-struct ScoreUi {
+pub struct ScoreUi {
     score: usize,
 }
 

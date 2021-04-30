@@ -32,7 +32,7 @@ use silo::{
 };
 use state::GameState;
 use team::Team;
-use ui::{GameOverPlugin, MainMenuPlugin, OptionsMenuPlugin, ScoreUiPlugin};
+use ui::{GameOverPlugin, MainMenuPlugin, OptionsMenuPlugin, PauseMenuPlugin, ScoreUiPlugin};
 
 struct Building;
 
@@ -385,6 +385,12 @@ fn check_game_over(query: Query<&Building>, mut state: ResMut<State<GameState>>)
     }
 }
 
+fn check_pause(input: Res<Input<KeyCode>>, mut state: ResMut<State<GameState>>) {
+    if input.just_pressed(KeyCode::Escape) {
+        state.push(GameState::Paused).unwrap();
+    }
+}
+
 fn main() {
     App::build()
         .insert_resource(WindowDescriptor {
@@ -409,17 +415,18 @@ fn main() {
         .add_plugin(ActionsPlugin)
         .add_plugin(KiraAudioPlugin)
         .add_plugin(AudioPlugin)
+        .add_plugin(PauseMenuPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))
-        .add_system(bevy::input::system::exit_on_esc_system.system())
         .add_system(get_mouse_pos.system().label("get_mouse_position"))
         .add_system_set(SystemSet::on_enter(GameState::Game).with_system(setup_game.system()))
         .add_system_set(
             SystemSet::on_update(GameState::Game)
                 .with_system(shoot.system().after("get_mouse_position"))
                 .with_system(apply_velocity.system())
-                .with_system(check_game_over.system()),
+                .with_system(check_game_over.system())
+                .with_system(check_pause.system()),
         )
         .add_system_set(SystemSet::on_exit(GameState::Game).with_system(despawn_game.system()))
         .run();

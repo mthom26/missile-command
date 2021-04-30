@@ -2,11 +2,7 @@ use bevy::{app::AppExit, prelude::*};
 
 use crate::{audio::PlayAudio, state::GameState, AssetHandles};
 
-enum MainMenuButton {
-    Play,
-    Options,
-    Quit,
-}
+use super::{spawn_button, ButtonType};
 
 struct MainMenuUi;
 
@@ -78,32 +74,24 @@ fn setup_menu(
                         parent,
                         &asset_handles,
                         "PLAY".to_string(),
-                        MainMenuButton::Play,
+                        ButtonType::SetGame,
                     );
                     // Options button
                     spawn_button(
                         parent,
                         &asset_handles,
                         "OPTIONS".to_string(),
-                        MainMenuButton::Options,
+                        ButtonType::SetOptions,
                     );
                     // Quit button
-                    spawn_button(
-                        parent,
-                        &asset_handles,
-                        "QUIT".to_string(),
-                        MainMenuButton::Quit,
-                    );
+                    spawn_button(parent, &asset_handles, "QUIT".to_string(), ButtonType::Quit);
                 });
         });
 }
 
 fn update_menu(
     asset_handles: Res<AssetHandles>,
-    mut query: Query<
-        (&Interaction, &mut Handle<ColorMaterial>, &MainMenuButton),
-        Changed<Interaction>,
-    >,
+    mut query: Query<(&Interaction, &mut Handle<ColorMaterial>, &ButtonType), Changed<Interaction>>,
     mut state: ResMut<State<GameState>>,
     mut events: EventWriter<AppExit>,
     mut audio_events: EventWriter<PlayAudio>,
@@ -116,9 +104,10 @@ fn update_menu(
                     handle: asset_handles.button_click_audio.clone(),
                 });
                 match button {
-                    MainMenuButton::Play => state.set(GameState::Game).unwrap(),
-                    MainMenuButton::Options => state.set(GameState::OptionsMenu).unwrap(),
-                    MainMenuButton::Quit => events.send(AppExit),
+                    ButtonType::SetGame => state.set(GameState::Game).unwrap(),
+                    ButtonType::SetOptions => state.set(GameState::OptionsMenu).unwrap(),
+                    ButtonType::Quit => events.send(AppExit),
+                    _ => eprintln!("Button should not exist here."),
                 }
             }
             Interaction::Hovered => {
@@ -136,42 +125,4 @@ fn despawn(mut commands: Commands, query: Query<(Entity, &MainMenuUi)>) {
     for (entity, _) in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
-}
-
-// Spawn Main Menu button
-fn spawn_button(
-    parent: &mut ChildBuilder,
-    asset_handles: &AssetHandles,
-    text_value: String,
-    button_type: MainMenuButton,
-) {
-    parent
-        .spawn_bundle(ButtonBundle {
-            style: Style {
-                size: Size::new(Val::Px(250.0), Val::Px(65.0)),
-                margin: Rect::all(Val::Px(5.0)),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..Default::default()
-            },
-            material: asset_handles.button_normal.clone(),
-            ..Default::default()
-        })
-        .insert(button_type)
-        .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text {
-                    sections: vec![TextSection {
-                        value: text_value,
-                        style: TextStyle {
-                            font: asset_handles.font.clone(),
-                            font_size: 20.0,
-                            color: Color::rgb(0.9, 0.9, 0.9),
-                        },
-                    }],
-                    ..Default::default()
-                },
-                ..Default::default()
-            });
-        });
 }
