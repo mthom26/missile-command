@@ -365,11 +365,12 @@ fn despawn_game(
             With<LineTrail>,
             With<Ground>,
             With<SiloReloadUi>,
+            With<SiloMissileCountUi>,
         )>,
     >,
 ) {
     for entity in query.iter() {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
 }
 

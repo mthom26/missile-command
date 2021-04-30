@@ -88,7 +88,7 @@ impl Actions {
         self.just_released.clear();
     }
 
-    pub fn pressed(&self, action: &str) -> bool {
+    pub fn _pressed(&self, action: &str) -> bool {
         match self.pressed.get(action) {
             Some(_) => true,
             None => false,
@@ -102,7 +102,7 @@ impl Actions {
         }
     }
 
-    pub fn just_released(&self, action: &str) -> bool {
+    pub fn _just_released(&self, action: &str) -> bool {
         match self.just_released.get(action) {
             Some(_) => true,
             None => false,

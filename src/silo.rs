@@ -86,7 +86,7 @@ fn update_reload_ui(
 
 fn update_missile_count_ui(
     query: Query<(&SiloMissileCountUi, &SiloLocation, &Children)>,
-    mut visible_query: Query<(&mut Visible)>,
+    mut visible_query: Query<&mut Visible>,
     mut events: EventReader<SiloMissileCountUpdate>,
 ) {
     for e in events.iter() {
