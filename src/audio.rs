@@ -13,10 +13,7 @@ impl Plugin for AudioPlugin {
     }
 }
 
-fn play_sfx(
-    audio: Res<KiraAudio>,
-    mut events: EventReader<PlayAudio>,
-) {
+fn play_sfx(audio: Res<KiraAudio>, mut events: EventReader<PlayAudio>) {
     for e in events.iter() {
         audio.play(e.handle.clone());
     }

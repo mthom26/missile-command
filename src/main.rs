@@ -27,7 +27,9 @@ use explosion::{Explosion, ExplosionPlugin};
 use line_trail::{LineMaterial, LineTrail, LineTrailPlugin};
 use missile::{Missile, MissilePlugin, SpawnMissile};
 use powerups::PowerupsPlugin;
-use silo::{Silo, SiloLocation, SiloPlugin, SiloReloadUi};
+use silo::{
+    Silo, SiloLocation, SiloMissileCountUi, SiloMissileCountUpdate, SiloPlugin, SiloReloadUi,
+};
 use state::GameState;
 use team::Team;
 use ui::{GameOverPlugin, MainMenuPlugin, OptionsMenuPlugin, ScoreUiPlugin};
@@ -240,6 +242,33 @@ fn setup_game(
                     })
                     .insert(SiloReloadUi)
                     .insert(silo_location);
+
+                // Missile Count Ui
+                commands
+                    .spawn()
+                    .insert(GlobalTransform {
+                        translation: Vec3::new(x, y - 30.0, 0.0),
+                        ..Default::default()
+                    })
+                    .insert(Transform {
+                        translation: Vec3::new(x, y - 30.0, 0.0),
+                        ..Default::default()
+                    })
+                    .insert(SiloMissileCountUi)
+                    .insert(silo_location)
+                    .with_children(|parent| {
+                        let space = 25.0;
+                        for i in 0..3 {
+                            parent.spawn_bundle(SpriteBundle {
+                                material: asset_handles.missile_green.clone(),
+                                transform: Transform {
+                                    translation: Vec3::new(-space + (space * i as f32), 0.0, 0.0),
+                                    ..Default::default()
+                                },
+                                ..Default::default()
+                            });
+                        }
+                    });
             }
             _ => {
                 let mut rng = thread_rng();
@@ -276,6 +305,7 @@ fn shoot(
     mouse_pos: Res<MousePosition>,
     mut query: Query<(&mut Silo, &mut Timer, &Transform)>,
     mut events: EventWriter<SpawnMissile>,
+    mut silo_ui_events: EventWriter<SiloMissileCountUpdate>,
 ) {
     let target = Vec3::new(mouse_pos.position.x, mouse_pos.position.y, 0.0);
     let team = Team::Player;
@@ -294,6 +324,10 @@ fn shoot(
                     position: transform.translation,
                     target,
                     team,
+                });
+                silo_ui_events.send(SiloMissileCountUpdate {
+                    location: silo.location,
+                    count: silo.missiles,
                 });
             }
         }
