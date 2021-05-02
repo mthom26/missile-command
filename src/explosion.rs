@@ -16,6 +16,7 @@ struct Size(f32);
 pub struct SpawnExplosion {
     pub position: Vec3,
     pub team: Team,
+    pub size: f32,
 }
 
 pub struct ExplosionPlugin;
@@ -55,7 +56,7 @@ fn spawn_explosions(
                     ..Default::default()
                 })
                 .insert(PlayerTeam)
-                .insert(Size(1.0))
+                .insert(Size(e.size))
                 .insert(CircleCollider(EXPLOSION_SIZE))
                 .insert(Explosion);
         } else {

@@ -5,6 +5,7 @@ use crate::{
     consts::{ENEMY_MISSILE_VELOCITY, MISSILE_RADIUS, PLAYER_MISSILE_VELOCITY},
     explosion::SpawnExplosion,
     line_trail::SpawnLineTrail,
+    player_status::PlayerStatus,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
     AssetHandles, Velocity,
@@ -113,6 +114,7 @@ fn spawn_missiles(
 fn check_target_reached(
     mut commands: Commands,
     mut events: EventWriter<SpawnExplosion>,
+    player_status: Res<PlayerStatus>,
     query: Query<(Entity, &Transform, &Target, &Team)>,
 ) {
     for (entity, transform, target, team) in query.iter() {
@@ -121,6 +123,7 @@ fn check_target_reached(
             events.send(SpawnExplosion {
                 position: transform.translation,
                 team: *team,
+                size: player_status.explosion_size,
             });
         }
     }

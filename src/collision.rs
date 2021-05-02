@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
-    consts::{MISSILE_HIT_VALUE, MISSILE_VALUE, SCORE_POWERUP_VALUE},
+    consts::{EXPLOSION_SIZE_SCALE, MISSILE_HIT_VALUE, MISSILE_VALUE, SCORE_POWERUP_VALUE},
     debris::{DebrisType, SpawnDebris},
     explosion::{Explosion, SpawnExplosion},
     missile::Missile,
+    player_status::{PlayerStatus, SetPlayerExplosionSize},
     powerups::PowerupType,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
@@ -35,6 +36,7 @@ fn explosion_collisions(
     enemy_missiles: Query<(Entity, &Missile, &EnemyTeam, &Transform)>,
     powerups: Query<(Entity, &PowerupType, &Transform, &CircleCollider)>,
     mut events: EventWriter<UpdateScoreUi>,
+    mut explosion_size_events: EventWriter<SetPlayerExplosionSize>,
 ) {
     for (_, _, p_collider, p_transform) in player_explosions.iter() {
         // TODO - Maybe merge the two queries into one?
@@ -54,7 +56,7 @@ fn explosion_collisions(
             let d = p_transform
                 .translation
                 .distance_squared(pow_transform.translation);
-            // TODO - Give powerups a proper collider
+
             if d < (p_collider.0 + pow_collider.0).powi(2) {
                 commands.entity(pow_entity).despawn();
 
@@ -62,6 +64,9 @@ fn explosion_collisions(
                     PowerupType::Score => events.send(UpdateScoreUi {
                         value: SCORE_POWERUP_VALUE,
                     }),
+                    PowerupType::ExplosionSize => {
+                        explosion_size_events.send(SetPlayerExplosionSize(EXPLOSION_SIZE_SCALE))
+                    }
                 };
             }
         }
@@ -71,6 +76,7 @@ fn explosion_collisions(
 // Player missiles hit Enemy missiles
 fn missile_collisions(
     mut commands: Commands,
+    player_status: Res<PlayerStatus>,
     player_missiles: Query<(Entity, &Missile, &PlayerTeam, &Transform, &CircleCollider)>,
     enemy_missiles: Query<(Entity, &Missile, &EnemyTeam, &Transform, &CircleCollider)>,
     mut events: EventWriter<SpawnExplosion>,
@@ -88,6 +94,7 @@ fn missile_collisions(
                 events.send(SpawnExplosion {
                     position: p_transform.translation,
                     team: Team::Player,
+                    size: player_status.explosion_size,
                 });
                 score_events.send(UpdateScoreUi {
                     value: MISSILE_HIT_VALUE,
@@ -130,6 +137,7 @@ fn enemy_missile_collisions(
                     events.send(SpawnExplosion {
                         position: missile_transform.translation,
                         team: Team::Enemy,
+                        size: 1.0,
                     });
                     debris_events.send(SpawnDebris {
                         x_position: structure_transform.translation.x,
@@ -150,6 +158,7 @@ fn enemy_missile_collisions(
                     events.send(SpawnExplosion {
                         position: missile_transform.translation,
                         team: Team::Enemy,
+                        size: 1.0,
                     });
                     debris_events.send(SpawnDebris {
                         x_position: structure_transform.translation.x,
@@ -163,6 +172,7 @@ fn enemy_missile_collisions(
 
 fn missile_ground_collisions(
     mut commands: Commands,
+    player_status: Res<PlayerStatus>,
     missiles: Query<(Entity, &Missile, &Transform, &Team)>,
     mut events: EventWriter<SpawnExplosion>,
 ) {
@@ -172,6 +182,10 @@ fn missile_ground_collisions(
             events.send(SpawnExplosion {
                 position: transform.translation,
                 team: *team,
+                size: match team {
+                    Team::Player => player_status.explosion_size,
+                    Team::Enemy => 1.0,
+                },
             })
         }
     }
@@ -180,10 +194,12 @@ fn missile_ground_collisions(
 // Player missiles hit Powerups
 fn powerup_collisions(
     mut commands: Commands,
+    player_status: Res<PlayerStatus>,
     missiles: Query<(Entity, &Missile, &Transform, &Team)>,
     powerups: Query<(Entity, &PowerupType, &Transform, &CircleCollider)>,
     mut events: EventWriter<SpawnExplosion>,
     mut score_events: EventWriter<UpdateScoreUi>,
+    mut explosion_size_events: EventWriter<SetPlayerExplosionSize>,
 ) {
     for (m_entity, _, m_transform, m_team) in missiles.iter() {
         for (p_entity, p_type, p_transform, p_collider) in powerups.iter() {
@@ -199,12 +215,16 @@ fn powerup_collisions(
                     events.send(SpawnExplosion {
                         position: m_transform.translation,
                         team: Team::Player,
+                        size: player_status.explosion_size,
                     });
 
                     match p_type {
                         PowerupType::Score => score_events.send(UpdateScoreUi {
                             value: SCORE_POWERUP_VALUE,
                         }),
+                        PowerupType::ExplosionSize => {
+                            explosion_size_events.send(SetPlayerExplosionSize(EXPLOSION_SIZE_SCALE))
+                        }
                     };
                 }
             }

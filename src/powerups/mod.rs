@@ -13,6 +13,7 @@ use crate::state::GameState;
 #[derive(Copy, Clone)]
 pub enum PowerupType {
     Score,
+    ExplosionSize,
 }
 
 pub struct PowerupsPlugin;

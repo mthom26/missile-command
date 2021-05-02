@@ -13,3 +13,7 @@ pub const POWERUP_RADIUS: f32 = 16.0;
 pub const MISSILE_VALUE: usize = 10; // Standard destroyed missile
 pub const MISSILE_HIT_VALUE: usize = 20; // Missile destroyed by direct hit
 pub const SCORE_POWERUP_VALUE: usize = 100;
+
+// PowerUp values
+pub const EXPLOSION_SIZE_SCALE: f32 = 2.0; // Player missile explosion size bonus
+pub const EXPLOSION_SIZE_TIME: f32 = 10.0; // Player missile explosion time

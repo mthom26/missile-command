@@ -11,6 +11,7 @@ mod enemy_spawner;
 mod explosion;
 mod line_trail;
 mod missile;
+mod player_status;
 mod powerups;
 mod silo;
 mod state;
@@ -26,6 +27,7 @@ use enemy_spawner::EnemySpawnerPlugin;
 use explosion::{Explosion, ExplosionPlugin};
 use line_trail::{LineMaterial, LineTrail, LineTrailPlugin};
 use missile::{Missile, MissilePlugin, SpawnMissile};
+use player_status::PlayerStatusPlugin;
 use powerups::PowerupsPlugin;
 use silo::{
     Silo, SiloLocation, SiloMissileCountUi, SiloMissileCountUpdate, SiloPlugin, SiloReloadUi,
@@ -74,6 +76,7 @@ pub struct AssetHandles {
 
     // Powerups
     pub score_powerup: Handle<ColorMaterial>,
+    pub explosion_size_powerup: Handle<ColorMaterial>,
 
     // Line Trail
     pub line_trail: Handle<Mesh>,
@@ -109,6 +112,7 @@ fn setup(
     let debris_01: Handle<Texture> = asset_server.load("debris_01.png");
     let silo_debris_01: Handle<Texture> = asset_server.load("silo_debris_01.png");
     let score_powerup_tex = asset_server.load("score_powerup.png");
+    let explosion_size_powerup_tex = asset_server.load("explosion_size_powerup.png");
 
     asset_handles.font = asset_server.load("BlocTekRegular-gxEZ4.ttf");
     asset_handles.simple_font = asset_server.load("MontserratBold-DOWZd.ttf");
@@ -135,6 +139,7 @@ fn setup(
         texture: None,
     });
     asset_handles.score_powerup = materials.add(score_powerup_tex.into());
+    asset_handles.explosion_size_powerup = materials.add(explosion_size_powerup_tex.into());
     asset_handles.rebind_widget = materials.add(Color::rgba(0.0, 0.0, 0.0, 0.9).into());
     asset_handles.none = materials.add(Color::NONE.into());
     asset_handles.button_hover_audio = asset_server.load("audio/Cursor Rollover 1.wav");
@@ -417,6 +422,7 @@ fn main() {
         .add_plugin(KiraAudioPlugin)
         .add_plugin(AudioPlugin)
         .add_plugin(PauseMenuPlugin)
+        .add_plugin(PlayerStatusPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))

@@ -40,8 +40,13 @@ pub fn run_powerup_spawner(
             _ => panic!("Error getting powerup velocity."),
         };
 
+        let powerup_type = match rng.gen_bool(0.5) {
+            true => PowerupType::Score,
+            false => PowerupType::ExplosionSize,
+        };
+
         events.send(SpawnPowerup {
-            powerup_type: PowerupType::Score,
+            powerup_type,
             position: Vec3::new(x, y, 0.0),
             velocity,
         });
@@ -58,6 +63,7 @@ pub fn spawn_powerups(
             .spawn_bundle(SpriteBundle {
                 material: match e.powerup_type {
                     PowerupType::Score => asset_handles.score_powerup.clone(),
+                    PowerupType::ExplosionSize => asset_handles.explosion_size_powerup.clone(),
                 },
                 transform: Transform {
                     translation: e.position,
