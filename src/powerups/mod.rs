@@ -10,10 +10,11 @@ pub use self::{
 
 use crate::state::GameState;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum PowerupType {
     Score,
     ExplosionSize,
+    MissileSpeed,
 }
 
 pub struct PowerupsPlugin;

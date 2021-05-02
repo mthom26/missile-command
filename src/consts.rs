@@ -16,4 +16,6 @@ pub const SCORE_POWERUP_VALUE: usize = 100;
 
 // PowerUp values
 pub const EXPLOSION_SIZE_SCALE: f32 = 2.0; // Player missile explosion size bonus
-pub const EXPLOSION_SIZE_TIME: f32 = 10.0; // Player missile explosion time
+pub const EXPLOSION_SIZE_TIME: f32 = 10.0; // Player missile explosion duration
+pub const MISSILE_SPEED_BONUS: f32 = 2.0; // Player missile speed bonus
+pub const MISSILE_SPEED_TIME: f32 = 10.0; // Player missile speed duration

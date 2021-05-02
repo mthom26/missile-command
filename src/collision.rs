@@ -1,11 +1,14 @@
 use bevy::prelude::*;
 
 use crate::{
-    consts::{EXPLOSION_SIZE_SCALE, MISSILE_HIT_VALUE, MISSILE_VALUE, SCORE_POWERUP_VALUE},
+    consts::{
+        EXPLOSION_SIZE_SCALE, MISSILE_HIT_VALUE, MISSILE_SPEED_BONUS, MISSILE_VALUE,
+        PLAYER_MISSILE_VELOCITY, SCORE_POWERUP_VALUE,
+    },
     debris::{DebrisType, SpawnDebris},
     explosion::{Explosion, SpawnExplosion},
     missile::Missile,
-    player_status::{PlayerStatus, SetPlayerExplosionSize},
+    player_status::{PlayerStatus, SetPlayerExplosionSize, SetPlayerMissileSpeed},
     powerups::PowerupType,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
@@ -37,6 +40,7 @@ fn explosion_collisions(
     powerups: Query<(Entity, &PowerupType, &Transform, &CircleCollider)>,
     mut events: EventWriter<UpdateScoreUi>,
     mut explosion_size_events: EventWriter<SetPlayerExplosionSize>,
+    mut missile_speed_events: EventWriter<SetPlayerMissileSpeed>,
 ) {
     for (_, _, p_collider, p_transform) in player_explosions.iter() {
         // TODO - Maybe merge the two queries into one?
@@ -67,6 +71,9 @@ fn explosion_collisions(
                     PowerupType::ExplosionSize => {
                         explosion_size_events.send(SetPlayerExplosionSize(EXPLOSION_SIZE_SCALE))
                     }
+                    PowerupType::MissileSpeed => missile_speed_events.send(SetPlayerMissileSpeed(
+                        PLAYER_MISSILE_VELOCITY * MISSILE_SPEED_BONUS,
+                    )),
                 };
             }
         }
@@ -200,6 +207,7 @@ fn powerup_collisions(
     mut events: EventWriter<SpawnExplosion>,
     mut score_events: EventWriter<UpdateScoreUi>,
     mut explosion_size_events: EventWriter<SetPlayerExplosionSize>,
+    mut missile_speed_events: EventWriter<SetPlayerMissileSpeed>,
 ) {
     for (m_entity, _, m_transform, m_team) in missiles.iter() {
         for (p_entity, p_type, p_transform, p_collider) in powerups.iter() {
@@ -225,6 +233,9 @@ fn powerup_collisions(
                         PowerupType::ExplosionSize => {
                             explosion_size_events.send(SetPlayerExplosionSize(EXPLOSION_SIZE_SCALE))
                         }
+                        PowerupType::MissileSpeed => missile_speed_events.send(
+                            SetPlayerMissileSpeed(PLAYER_MISSILE_VELOCITY * MISSILE_SPEED_BONUS),
+                        ),
                     };
                 }
             }

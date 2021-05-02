@@ -77,6 +77,7 @@ pub struct AssetHandles {
     // Powerups
     pub score_powerup: Handle<ColorMaterial>,
     pub explosion_size_powerup: Handle<ColorMaterial>,
+    pub missile_speed_powerup: Handle<ColorMaterial>,
 
     // Line Trail
     pub line_trail: Handle<Mesh>,
@@ -113,6 +114,7 @@ fn setup(
     let silo_debris_01: Handle<Texture> = asset_server.load("silo_debris_01.png");
     let score_powerup_tex = asset_server.load("score_powerup.png");
     let explosion_size_powerup_tex = asset_server.load("explosion_size_powerup.png");
+    let missile_speed_powerup_tex = asset_server.load("missile_speed_powerup.png");
 
     asset_handles.font = asset_server.load("BlocTekRegular-gxEZ4.ttf");
     asset_handles.simple_font = asset_server.load("MontserratBold-DOWZd.ttf");
@@ -140,6 +142,7 @@ fn setup(
     });
     asset_handles.score_powerup = materials.add(score_powerup_tex.into());
     asset_handles.explosion_size_powerup = materials.add(explosion_size_powerup_tex.into());
+    asset_handles.missile_speed_powerup = materials.add(missile_speed_powerup_tex.into());
     asset_handles.rebind_widget = materials.add(Color::rgba(0.0, 0.0, 0.0, 0.9).into());
     asset_handles.none = materials.add(Color::NONE.into());
     asset_handles.button_hover_audio = asset_server.load("audio/Cursor Rollover 1.wav");

@@ -40,9 +40,10 @@ pub fn run_powerup_spawner(
             _ => panic!("Error getting powerup velocity."),
         };
 
-        let powerup_type = match rng.gen_bool(0.5) {
-            true => PowerupType::Score,
-            false => PowerupType::ExplosionSize,
+        let powerup_type = match rng.gen_range(0.0..1.0) {
+            num if num < 0.33 => PowerupType::Score,
+            num if num > 0.67 => PowerupType::ExplosionSize,
+            _ => PowerupType::MissileSpeed,
         };
 
         events.send(SpawnPowerup {
@@ -64,6 +65,7 @@ pub fn spawn_powerups(
                 material: match e.powerup_type {
                     PowerupType::Score => asset_handles.score_powerup.clone(),
                     PowerupType::ExplosionSize => asset_handles.explosion_size_powerup.clone(),
+                    PowerupType::MissileSpeed => asset_handles.missile_speed_powerup.clone(),
                 },
                 transform: Transform {
                     translation: e.position,

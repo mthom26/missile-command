@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     collision::CircleCollider,
-    consts::{ENEMY_MISSILE_VELOCITY, MISSILE_RADIUS, PLAYER_MISSILE_VELOCITY},
+    consts::{ENEMY_MISSILE_VELOCITY, MISSILE_RADIUS},
     explosion::SpawnExplosion,
     line_trail::SpawnLineTrail,
     player_status::PlayerStatus,
@@ -35,8 +35,9 @@ impl Plugin for MissilePlugin {
 }
 
 fn spawn_missiles(
-    asset_handles: Res<AssetHandles>,
     mut commands: Commands,
+    asset_handles: Res<AssetHandles>,
+    player_status: Res<PlayerStatus>,
     mut events: EventReader<SpawnMissile>,
     mut line_events: EventWriter<SpawnLineTrail>,
 ) {
@@ -47,7 +48,7 @@ fn spawn_missiles(
         let angle = a.angle_between(b);
 
         let velocity = match e.team {
-            Team::Player => b.normalize() * PLAYER_MISSILE_VELOCITY,
+            Team::Player => b.normalize() * player_status.missile_speed,
             Team::Enemy => b.normalize() * ENEMY_MISSILE_VELOCITY,
         };
 
