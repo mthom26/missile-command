@@ -1,6 +1,6 @@
 use bevy::{app::AppExit, prelude::*};
 
-use crate::{AssetHandles, GameState};
+use crate::{audio::PlayAudio, AssetHandles, GameState};
 
 use super::{spawn_button, ButtonType};
 
@@ -104,18 +104,27 @@ fn update_game_over(
     mut query: Query<(&Interaction, &mut Handle<ColorMaterial>, &ButtonType), Changed<Interaction>>,
     mut state: ResMut<State<GameState>>,
     mut events: EventWriter<AppExit>,
+    mut audio_events: EventWriter<PlayAudio>,
 ) {
     for (interaction, mut material, button) in query.iter_mut() {
         match interaction {
             Interaction::Clicked => {
                 *material = asset_handles.button_click.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.button_click_audio.clone(),
+                });
                 match button {
                     ButtonType::SetMainMenu => state.set(GameState::MainMenu).unwrap(),
                     ButtonType::Quit => events.send(AppExit),
                     _ => eprintln!("Button should not exist here."),
                 }
             }
-            Interaction::Hovered => *material = asset_handles.button_hover.clone(),
+            Interaction::Hovered => {
+                *material = asset_handles.button_hover.clone();
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.button_hover_audio.clone(),
+                });
+            }
             Interaction::None => *material = asset_handles.button_normal.clone(),
         }
     }
