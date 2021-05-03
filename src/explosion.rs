@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    audio::PlayAudio,
     collision::CircleCollider,
     consts::EXPLOSION_SIZE,
     state::GameState,
@@ -34,6 +35,7 @@ fn spawn_explosions(
     asset_handles: Res<AssetHandles>,
     mut commands: Commands,
     mut events: EventReader<SpawnExplosion>,
+    mut audio_events: EventWriter<PlayAudio>,
 ) {
     for e in events.iter() {
         let explosion_material = match e.team {
@@ -78,6 +80,10 @@ fn spawn_explosions(
                 .insert(CircleCollider(EXPLOSION_SIZE))
                 .insert(Explosion);
         }
+
+        audio_events.send(PlayAudio {
+            handle: asset_handles.explosion_audio.clone(),
+        });
     }
 }
 

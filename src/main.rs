@@ -92,6 +92,8 @@ pub struct AssetHandles {
     pub button_click_audio: Handle<AudioSource>,
     pub rebind_widget_open_audio: Handle<AudioSource>,
     pub rebind_widget_close_audio: Handle<AudioSource>,
+    pub explosion_audio: Handle<AudioSource>,
+    pub powerup_audio: Handle<AudioSource>,
 
     // Miscellaneous
     pub none: Handle<ColorMaterial>,
@@ -151,6 +153,8 @@ fn setup(
     asset_handles.button_click_audio = asset_server.load("audio/Warm Digital Accept Button HP.wav");
     asset_handles.rebind_widget_open_audio = asset_server.load("audio/Window Open 2.wav");
     asset_handles.rebind_widget_close_audio = asset_server.load("audio/Button Sound 8.wav");
+    asset_handles.explosion_audio = asset_server.load("audio/explosionCrunch_000.ogg");
+    asset_handles.powerup_audio = asset_server.load("audio/Main Window Open.mp3");
 
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(UiCameraBundle::default());

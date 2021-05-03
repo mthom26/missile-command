@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    audio::PlayAudio,
     consts::{
         EXPLOSION_SIZE_SCALE, MISSILE_HIT_VALUE, MISSILE_SPEED_BONUS, MISSILE_VALUE,
         PLAYER_MISSILE_VELOCITY, SCORE_POWERUP_VALUE,
@@ -13,7 +14,7 @@ use crate::{
     powerups::PowerupType,
     state::GameState,
     team::{EnemyTeam, PlayerTeam, Team},
-    Building, Silo,
+    AssetHandles, Building, Silo,
 };
 
 pub struct CircleCollider(pub f32);
@@ -35,12 +36,14 @@ impl Plugin for CollisionPlugin {
 // Player explosions hit Enemy missiles and Powerups
 fn explosion_collisions(
     mut commands: Commands,
+    asset_handles: Res<AssetHandles>,
     player_explosions: Query<(&Explosion, &PlayerTeam, &CircleCollider, &Transform)>,
     enemy_missiles: Query<(Entity, &Missile, &EnemyTeam, &Transform)>,
     powerups: Query<(Entity, &PowerupType, &Transform, &CircleCollider)>,
     mut score_events: EventWriter<UpdateScore>,
     mut explosion_size_events: EventWriter<SetPlayerExplosionSize>,
     mut missile_speed_events: EventWriter<SetPlayerMissileSpeed>,
+    mut audio_events: EventWriter<PlayAudio>,
 ) {
     for (_, _, p_collider, p_transform) in player_explosions.iter() {
         // TODO - Maybe merge the two queries into one?
@@ -71,6 +74,10 @@ fn explosion_collisions(
                         PLAYER_MISSILE_VELOCITY * MISSILE_SPEED_BONUS,
                     )),
                 };
+
+                audio_events.send(PlayAudio {
+                    handle: asset_handles.powerup_audio.clone(),
+                });
             }
         }
     }
@@ -195,6 +202,7 @@ fn missile_ground_collisions(
 // Player missiles hit Powerups
 fn powerup_collisions(
     mut commands: Commands,
+    asset_handles: Res<AssetHandles>,
     player_status: Res<PlayerStatus>,
     missiles: Query<(Entity, &Missile, &Transform, &Team)>,
     powerups: Query<(Entity, &PowerupType, &Transform, &CircleCollider)>,
@@ -202,6 +210,7 @@ fn powerup_collisions(
     mut score_events: EventWriter<UpdateScore>,
     mut explosion_size_events: EventWriter<SetPlayerExplosionSize>,
     mut missile_speed_events: EventWriter<SetPlayerMissileSpeed>,
+    mut audio_events: EventWriter<PlayAudio>,
 ) {
     for (m_entity, _, m_transform, m_team) in missiles.iter() {
         for (p_entity, p_type, p_transform, p_collider) in powerups.iter() {
@@ -229,6 +238,10 @@ fn powerup_collisions(
                             SetPlayerMissileSpeed(PLAYER_MISSILE_VELOCITY * MISSILE_SPEED_BONUS),
                         ),
                     };
+
+                    audio_events.send(PlayAudio {
+                        handle: asset_handles.powerup_audio.clone(),
+                    });
                 }
             }
         }
