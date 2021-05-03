@@ -1,6 +1,6 @@
 use bevy::{app::AppExit, prelude::*};
 
-use crate::{audio::PlayAudio, AssetHandles, GameState};
+use crate::{audio::PlayAudio, game_status::GameStatus, AssetHandles, GameState};
 
 use super::{spawn_button, ButtonType};
 
@@ -22,6 +22,7 @@ impl Plugin for GameOverPlugin {
 fn setup_game_over(
     mut commands: Commands,
     asset_handles: Res<AssetHandles>,
+    game_status: Res<GameStatus>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     commands
@@ -56,11 +57,10 @@ fn setup_game_over(
             });
 
             // Score text
-            // TODO - Display score achieved in game
             parent.spawn_bundle(TextBundle {
                 text: Text {
                     sections: vec![TextSection {
-                        value: "SCORE: 1337".to_string(),
+                        value: format!("SCORE: {}", game_status.score.to_string()),
                         style: TextStyle {
                             font: asset_handles.font.clone(),
                             font_size: 40.0,

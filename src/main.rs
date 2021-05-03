@@ -9,6 +9,7 @@ mod consts;
 mod debris;
 mod enemy_spawner;
 mod explosion;
+mod game_status;
 mod line_trail;
 mod missile;
 mod player_status;
@@ -25,6 +26,7 @@ use consts::{SILO_MAX_MISSILES, SILO_RELOAD_TIME};
 use debris::{DebrisPlugin, DebrisType};
 use enemy_spawner::EnemySpawnerPlugin;
 use explosion::{Explosion, ExplosionPlugin};
+use game_status::GameStatusPlugin;
 use line_trail::{LineMaterial, LineTrail, LineTrailPlugin};
 use missile::{Missile, MissilePlugin, SpawnMissile};
 use player_status::PlayerStatusPlugin;
@@ -426,6 +428,7 @@ fn main() {
         .add_plugin(AudioPlugin)
         .add_plugin(PauseMenuPlugin)
         .add_plugin(PlayerStatusPlugin)
+        .add_plugin(GameStatusPlugin)
         .init_resource::<MousePosition>()
         .init_resource::<AssetHandles>()
         .add_startup_system(setup.system().label("setup"))

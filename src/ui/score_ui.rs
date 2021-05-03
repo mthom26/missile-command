@@ -9,9 +9,7 @@ pub struct ScoreUi {
 struct ScoreUiText;
 
 // Update score Event
-pub struct UpdateScoreUi {
-    pub value: usize,
-}
+pub struct UpdateScoreUi(pub usize);
 
 pub struct ScoreUiPlugin;
 impl Plugin for ScoreUiPlugin {
@@ -81,15 +79,11 @@ fn update_score_ui(
     mut events: EventReader<UpdateScoreUi>,
 ) {
     for e in events.iter() {
-        let mut new_score = 0;
-
         for mut score_ui in query.iter_mut() {
-            score_ui.score += e.value;
-            new_score = score_ui.score;
-        }
-
-        for (_, mut text) in text_query.iter_mut() {
-            text.sections[0].value = new_score.to_string();
+            score_ui.score = e.0;
+            for (_, mut text) in text_query.iter_mut() {
+                text.sections[0].value = score_ui.score.to_string();
+            }
         }
     }
 }
