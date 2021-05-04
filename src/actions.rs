@@ -48,6 +48,21 @@ impl ActionsMap {
         self.write_config_to_file();
     }
 
+    pub fn reset_bindings(&mut self) {
+        let path = format!("./config/default_bindings.ron");
+        let f = File::open(&path).expect("Could not open file");
+
+        *self = match from_reader(f) {
+            Ok(x) => x,
+            Err(e) => {
+                println!("Failed to load config: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        self.write_config_to_file();
+    }
+
     fn write_config_to_file(&self) {
         let path = format!("./config/bindings.ron");
         let file = File::create(&path).expect("Could not create bindings file.");

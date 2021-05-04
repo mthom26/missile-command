@@ -114,6 +114,15 @@ fn setup_menu(
                     }
                 });
 
+            // Reset bindings button
+            // TODO - Currently the options menu only updates after reloading the OptionsMenu state,
+            //        Need to respawn Rebind buttons...
+            spawn_button(
+                parent,
+                &asset_handles,
+                "RESET KEYBINDINGS".to_string(),
+                ButtonType::ResetKeyBindings,
+            );
             // Main Menu button
             spawn_button(
                 parent,
@@ -126,6 +135,7 @@ fn setup_menu(
 
 fn update_menu(
     asset_handles: Res<AssetHandles>,
+    mut action_map: ResMut<ActionsMap>,
     mut query: Query<(&Interaction, &mut Handle<ColorMaterial>, &ButtonType), Changed<Interaction>>,
     mut state: ResMut<State<GameState>>,
     mut audio_events: EventWriter<PlayAudio>,
@@ -140,6 +150,7 @@ fn update_menu(
                 });
                 match button {
                     ButtonType::SetMainMenu => state.set(GameState::MainMenu).unwrap(),
+                    ButtonType::ResetKeyBindings => action_map.reset_bindings(),
                     _ => eprintln!("Button should not exist here."),
                 }
             }

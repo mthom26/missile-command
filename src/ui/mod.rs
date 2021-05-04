@@ -20,6 +20,7 @@ enum ButtonType {
     SetGame,
     SetMainMenu,
     SetOptions,
+    ResetKeyBindings,
     PopState,
     Quit,
 }

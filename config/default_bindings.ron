@@ -1,0 +1,7 @@
+(
+    keyboard: {
+        D: "Fire Right Silo",
+        A: "Fire Left Silo",
+        S: "Fire Middle Silo",
+    },
+)
