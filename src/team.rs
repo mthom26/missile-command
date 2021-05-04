@@ -1,5 +1,5 @@
 /*-----------------------------------------------------------------------------
-    The `PlayerTeam` and `EenmyTeam` components below exist to make collision
+    The `PlayerTeam` and `EnemyTeam` components below exist to make collision
     querying easier. However some entities need to be able to pass info to
     spawn events (e.g. Missile spawning an explosion) and require both a
     `Team` and `PlayerTeam`/`EnemyTeam` component.
