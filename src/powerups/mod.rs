@@ -22,7 +22,7 @@ impl Plugin for PowerupsPlugin {
     fn build(&self, app: &mut AppBuilder) {
         app.add_event::<SpawnPowerup>()
             .insert_resource(PowerupSpawner {
-                timer: Timer::new(Duration::from_secs_f32(2.0), true),
+                timer: Timer::new(Duration::from_secs_f32(10.0), true),
             })
             .add_system_set(
                 SystemSet::on_update(GameState::Game)
